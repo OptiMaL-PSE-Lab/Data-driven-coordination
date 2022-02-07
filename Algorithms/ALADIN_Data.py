@@ -232,7 +232,7 @@ class System:
         self.N_var = N_var
     
     def initialize(self, rho, N_it, z, 
-                          fi_list, A_dict, rho_inc = 1): 
+                          fi_list, A_dict, rho_inc = 1, seed=0): 
         self.rho = rho
         self.rho_inc = rho_inc
         self.N_it = N_it
@@ -242,7 +242,7 @@ class System:
         self.C_big = {}
         self.y_big = {}
         self.A_big = A_dict
-        self.seed = 0
+        self.seed = seed
         
         self.systems = {}
         self.prim_r = []

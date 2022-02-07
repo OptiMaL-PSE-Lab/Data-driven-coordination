@@ -123,11 +123,11 @@ fig2 = plt.figure()
 ax2 = fig2.add_subplot() 
 
 s = 'ADMM_Scaled'
-out = postprocessing(ax1, ax2,  s, ADMM_Scaled_system, actual_f, c='dodgerblue')
+out = postprocessing(ax1, ax2,  s, ADMM_Scaled_system, actual_f, c='blue')
 ax1, ax2 = out
 
 s = 'CUATRO_1'
-out = postprocessing_List(ax1, ax2, s, CUATRO1_List, actual_f, coord_input = True, c='darkorange')
+out = postprocessing_List(ax1, ax2, s, CUATRO1_List, actual_f, coord_input = True, c='orange')
 ax1, ax2 = out
 
 s = 'Py-BOBYQA'
@@ -139,11 +139,11 @@ out = postprocessing_List(ax1, ax2, s, DIRECT_List, actual_f, coord_input = True
 ax1, ax2 = out
 
 s = 'CUATRO_2'
-out = postprocessing_List(ax1, ax2, s, CUATRO2_List, actual_f, ALADIN = True, init=float(y0), c='darkviolet')
+out = postprocessing_List(ax1, ax2, s, CUATRO2_List, actual_f, ALADIN = True, init=float(y0), c='purple')
 ax1, ax2 = out
 
 s = 'BO'
-out = postprocessing_List(ax1, ax2, s, BO_List, actual_f, BO = True, c='saddlebrown')
+out = postprocessing_List(ax1, ax2, s, BO_List, actual_f, BO = True, c='brown')
 ax1, ax2 = out
 
 # ax1.scatter

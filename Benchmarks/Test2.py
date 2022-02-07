@@ -20,7 +20,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pyomo.environ as pyo
 
-from utilities import postprocessing, preprocess_BO
+from utilities import postprocessing, preprocess_BO, postprocessing_List
 
 
 rho = 5000
@@ -28,6 +28,7 @@ N_it = 50
 
 N = 4
 N_var = 10
+N_runs = 10
 list_fi = [f1, f2, f3, f4]
 
 global_ind = [1, 2]
@@ -55,10 +56,15 @@ bounds = np.array([[-10, 10], [-10, 10]])
 init_trust = 1
 beta = 0.5
 
-Coordinator_withConstr_system = Coordinator_withConstr(N, N_var, index_agents, global_ind)
-Coordinator_withConstr_system.initialize_Decomp(rho, N_it, list_fi, z)
-output_Coord = Coordinator_withConstr_system.solve(CUATRO, x0, bounds, init_trust, 
-                            budget = N_it, beta_red = beta)    
+CUATRO1_List = []
+s = 'Coordinator'
+for i in range(N_runs):
+    Coordinator_withConstr_system = Coordinator_withConstr(N, N_var, index_agents, global_ind)
+    Coordinator_withConstr_system.initialize_Decomp(rho, N_it, list_fi, z)
+    output_Coord = Coordinator_withConstr_system.solve(CUATRO, x0, bounds, init_trust, 
+                            budget = N_it, beta_red = beta, rnd_seed=i) 
+    CUATRO1_List += [output_Coord]
+    print(s + ' run ' + str(i+1) + ': Done')
 
 s = 'Coordinator'
 print(s+': ', 'Done')
@@ -71,11 +77,15 @@ A3[1][0] = -1 ; A3[2][0] = 1 ; A3[4][1] = -1 ; A3[5][1] = 1
 A4[2][0] = -1 ; A4[5][1] = -1
 A_dict = {1: A1, 2: A2, 3: A3, 4: A4}
 
-
-System_dataAL = ALADIN_Data(N, N_var, index_agents, global_ind)
-System_dataAL.initialize(rho, N_it, z, list_fi, A_dict)
-System_dataAL.solve(6, init_trust, mu = 1e7)
-
+s = 'ALADIN_Data'
+CUATRO2_List = []
+for i in range(N_runs):
+    System_dataAL = ALADIN_Data(N, N_var, index_agents, global_ind)
+    System_dataAL.initialize(rho, N_it, z, list_fi, A_dict, seed=i)
+    System_dataAL.solve(6, init_trust, mu = 1e7)
+    CUATRO2_List += [System_dataAL]
+    print(s + ' run ' + str(i+1) + ': Done')
+    
 s = 'ALADIN_Data'
 print(s+': ', 'Done')
 
@@ -98,19 +108,29 @@ pybobyqa = PyBobyqaWrapper().solve(f_pbqa, x0, bounds=bounds.T, \
                                       seek_global_minimum= True, \
                                       objfun_has_noise=False)
 
-DIRECT =  DIRECTWrapper().solve(f_DIR, x0, bounds, maxfun = N_it, 
-                                   constraints=1)
 
 domain = [{'name': 'var_'+str(i+1), 'type': 'continuous', 'domain': (-10,10)} for i in range(dim)]
-
 y0 = np.array([f_BO(x0)])
-for i in range(len(DIRECT['f_best_so_far'])):
-    if DIRECT['f_best_so_far'][i] > float(y0):
-        DIRECT['f_best_so_far'][i] = float(y0)
-BO = BayesianOptimization(f=f_BO, domain=domain, X=x0.reshape((1,dim)), Y=y0.reshape((1,1)))
-BO.run_optimization(max_iter=N_it)
-BO_post = preprocess_BO(BO.Y.flatten(), y0)
 
+s = 'DIRECT'
+DIRECT_List = []
+for i in range(N_runs): 
+    DIRECT =  DIRECTWrapper().solve(f_DIR, x0, bounds, maxfun = N_it, 
+                                   constraints=1)
+    for j in range(len(DIRECT['f_best_so_far'])):
+        if DIRECT['f_best_so_far'][j] > float(y0):
+            DIRECT['f_best_so_far'][j] = float(y0)
+    DIRECT_List += [DIRECT]
+    print(s + ' run ' + str(i+1) + ': Done')   
+   
+s = 'BO'
+BO_List = []
+for i in range(N_runs):         
+    BO = BayesianOptimization(f=f_BO, domain=domain, X=x0.reshape((1,dim)), Y=y0.reshape((1,1)))
+    BO.run_optimization(max_iter=N_it)
+    BO_post = preprocess_BO(BO.Y.flatten(), y0)
+    BO_List += [BO_post]
+    print(s + ' run ' + str(i+1) + ': Done')
 
 fig1 = plt.figure() 
 ax1 = fig1.add_subplot() 
@@ -118,27 +138,27 @@ fig2 = plt.figure()
 ax2 = fig2.add_subplot() 
 
 s = 'ADMM_Scaled'
-out = postprocessing(ax1, ax2,  s, ADMM_Scaled_system, actual_f)
+out = postprocessing(ax1, ax2,  s, ADMM_Scaled_system, actual_f, c='dodgerblue')
 ax1, ax2 = out
 
 s = 'CUATRO_1'
-out = postprocessing(ax1, ax2, s, output_Coord, actual_f, coord_input = True)
+out = postprocessing_List(ax1, ax2, s, CUATRO1_List, actual_f, coord_input = True, c='darkorange')
 ax1, ax2 = out
 
 s = 'Py-BOBYQA'
-out = postprocessing(ax1, ax2, s, pybobyqa, actual_f, coord_input = True)
+out = postprocessing(ax1, ax2, s, pybobyqa, actual_f, coord_input = True, c='green')
 ax1, ax2 = out
 
 s = 'DIRECT-L'
-out = postprocessing(ax1, ax2, s, DIRECT, actual_f, coord_input = True)
+out = postprocessing_List(ax1, ax2, s, DIRECT_List, actual_f, coord_input = True, c='red')
 ax1, ax2 = out
 
 s = 'CUATRO_2'
-out = postprocessing(ax1, ax2, s, System_dataAL, actual_f, ALADIN = True, init=float(y0))
+out = postprocessing_List(ax1, ax2, s, CUATRO2_List, actual_f, ALADIN = True, init=float(y0), c='darkviolet')
 ax1, ax2 = out
 
 s = 'BO'
-out = postprocessing(ax1, ax2, s, BO_post, actual_f, BO = True)
+out = postprocessing_List(ax1, ax2, s, BO_List, actual_f, BO = True, c='saddlebrown')
 ax1, ax2 = out
 
 # ax1.scatter
