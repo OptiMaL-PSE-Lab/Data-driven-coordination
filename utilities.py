@@ -8,7 +8,20 @@ Created on Mon Jan 31 23:22:39 2022
 
 import numpy as np
 
-def postprocessing(ax1, ax2, string, result, actual_f, coord_input = False, ALADIN = False, BO = False, samecoord = False, N=2):
+def post_ALADIN(array, init):
+    N = len(array)
+    if init is not None:
+        best = float(init)
+    else:
+        best = array[0]
+    for i in range(N):
+        if best < array[i]:
+            array[i] = best
+        else:
+            best = array[i]
+    return array
+
+def postprocessing(ax1, ax2, string, result, actual_f, coord_input = False, ALADIN = False, BO = False, samecoord = False, init = None, N=2):
     if BO:
         obj_global = result
         conv_arr = (obj_global - actual_f)**2 
@@ -19,15 +32,15 @@ def postprocessing(ax1, ax2, string, result, actual_f, coord_input = False, ALAD
         if samecoord:
             obj_arr = np.array(result.best_obj)
             n_eval = np.array(result.n_eval)
-            obj_global = np.array(result.obj_global)
+            # obj_global = np.array(result.obj_global)
             # z_arr = np.array(result.center_list)
             # ax2.scatter(z_arr[:,0], z_arr[:,1], label = string, s = 10)
             conv_arr = (obj_arr - actual_f)**2 
             ax1.step(n_eval, conv_arr, '--', where = 'post', label = string)
             ax2.step(n_eval, obj_arr, '--', where = 'post', label = string)
         else:
-            
             obj_global = np.sum(np.array([result.obj[i+1] for i in range(N)]), axis = 0)
+            obj_global = post_ALADIN(obj_global, init)
             # z_arr1 = np.mean([result.z_list[idx+1][global_ind[0]] for idx in range(N)], axis = 0)
             # z_arr2 = np.mean([result.z_list[idx+1][global_ind[1]] for idx in range(N)], axis = 0)
             # ax2.scatter(z_arr1, z_arr2, label = string, s = 10)
@@ -48,6 +61,8 @@ def postprocessing(ax1, ax2, string, result, actual_f, coord_input = False, ALAD
         # x_list = np.array(result['x_store'])
         # x_best = np.array(result['x_best_so_far'])
         f_best = np.array(result['f_best_so_far'])
+        if init is not None:
+            f_best = preprocess_BO(f_best, init)
         ind_best = np.array(result['samples_at_iteration'])       
         ax1.step(ind_best, (f_best - actual_f)**2, '--', where = 'post', label = string)
         # ax2.plot(x_best[:,0], x_best[:,1], '--', c = 'k', linewidth = 1)
@@ -55,54 +70,6 @@ def postprocessing(ax1, ax2, string, result, actual_f, coord_input = False, ALAD
         ax2.step(ind_best, f_best, '--', where = 'post', label = string)
         
     return ax1, ax2
-
-# def draw_Test1(ax, string, result, actual_f, coord_input = False, ALADIN = False, BO = False, samecoord = False, N=2):
-#     if BO:
-#         obj_global = result
-#         conv_arr = (obj_global - actual_f)**2 
-#         n_eval = np.arange(len(obj_global))+1
-#         ax1.step(n_eval, conv_arr, '--', where = 'post', label = string)
-#         ax2.step(n_eval, obj_global, '--', where = 'post', label = string)
-#     elif ALADIN:
-#         if samecoord:
-#             obj_arr = np.array(result.best_obj)
-#             n_eval = np.array(result.n_eval)
-#             obj_global = np.array(result.obj_global)
-#             # z_arr = np.array(result.center_list)
-#             # ax2.scatter(z_arr[:,0], z_arr[:,1], label = string, s = 10)
-#             conv_arr = (obj_arr - actual_f)**2 
-#             ax1.step(n_eval, conv_arr, '--', where = 'post', label = string)
-#             ax2.step(n_eval, obj_arr, '--', where = 'post', label = string)
-#         else:
-            
-#             obj_global = np.sum(np.array([result.obj[i+1] for i in range(N)]), axis = 0)
-#             # z_arr1 = np.mean([result.z_list[idx+1][global_ind[0]] for idx in range(N)], axis = 0)
-#             # z_arr2 = np.mean([result.z_list[idx+1][global_ind[1]] for idx in range(N)], axis = 0)
-#             # ax2.scatter(z_arr1, z_arr2, label = string, s = 10)
-#             conv_arr = (obj_global - actual_f)**2 
-#             n_eval = np.arange(len(obj_global))+1
-#             ax1.step(n_eval, conv_arr, '--', where = 'post', label = string)
-#             ax2.step(n_eval, obj_global, '--', where = 'post', label = string)
-#     elif not coord_input:
-#         obj_arr = np.sum(np.array([result.obj[i+1] for i in range(N)]), axis = 0)
-#         # z_arr1 = np.array(result.z_list[global_ind[0]])
-#         # z_arr2 = np.array(result.z_list[global_ind[1]])
-#         conv_arr = (obj_arr - actual_f)**2 
-#         ax1.step(np.arange(len(obj_arr))+1, conv_arr, '--', where = 'post', label = string)
-#         # ax2.scatter(z_arr1, z_arr2, label = string, s = 10)   
-#         ax2.step(np.arange(len(obj_arr))+1, obj_arr, '--', where = 'post', label = string)
-#     else:
-#         # f = np.array(result['f_store'])
-#         # x_list = np.array(result['x_store'])
-#         # x_best = np.array(result['x_best_so_far'])
-#         f_best = np.array(result['f_best_so_far'])
-#         ind_best = np.array(result['samples_at_iteration'])       
-#         ax1.step(ind_best, (f_best - actual_f)**2, '--', where = 'post', label = string)
-#         # ax2.plot(x_best[:,0], x_best[:,1], '--', c = 'k', linewidth = 1)
-#         # ax2.scatter(x_list[:,0], x_list[:,1], label = string, s = 10)
-#         ax2.step(ind_best, f_best, '--', where = 'post', label = string)
-        
-#     return ax
 
 def construct_A(index_dict, global_list, N_ag, only_global = False):
     N_g = len(global_list)
@@ -134,6 +101,5 @@ def preprocess_BO(array, init):
             f_best[j] = best
 
     return f_best
-
 
 
