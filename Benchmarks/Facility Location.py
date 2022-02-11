@@ -68,8 +68,8 @@ print(pyo.value(res.obj))
 
 # raise ValueError('Error')
 
-rho = 100000 # second
-# rho = 1000 # first
+# rho = 100000 
+rho = 1e6
 N_it = 200
 
 N = 4
@@ -156,7 +156,7 @@ except:
     y_dummy = float(np.sum([pyo.value(f(z_dummy, rho, global_ind, global_ind).obj) for f in list_fi]))
     output_Coord1_5d['f_best_so_far'] = np.zeros(N_it) + y_dummy
     output_Coord1_5d['samples_at_iteration'] = np.arange(1, N_it+1)
-    output_Coord1_5d['x_best_so_fart'] = [x0_scaled]
+    output_Coord1_5d['x_best_so_far'] = [x0_scaled]
 print('Coord1 done')
 
 
@@ -375,7 +375,7 @@ print(pyo.value(res.obj))
 # raise ValueError('Error')
 
 # rho = 100000
-N_it = 200
+# N_it = 200
 
 N = 4
 N_var = 10
@@ -403,9 +403,9 @@ global_ind = list(np.arange(N_var)+1)
 #     result += pyo.value(res1.obj) + pyo.value(res2.obj) 
 
 x0 = np.array([1.25, 2.5] + [3.75, 2.5] + \
-              [100, 100] + \
               [50, 50] + \
-              [50, 50]) 
+              [25, 25] + \
+              [25, 25]) 
 z = {i: x0[i-1] for i in global_ind}
 
 index_agents = {i+1: global_ind for i in range(N)}
@@ -421,6 +421,7 @@ def f4(z_list, rho, global_ind, index, u_list = None, solver = False, seed=2):
 
 list_fi = [f1, f2, f3, f4]
 
+
 ADMM_Scaled_system10d = ADMM_Scaled(N, N_var, index_agents, global_ind)
 ADMM_Scaled_system10d.initialize_ADMM(rho, N_it, list_fi, z)
 ADMM_Scaled_system10d.solve_ADMM()
@@ -428,9 +429,10 @@ ADMM_Scaled_system10d.solve_ADMM()
 
 print('ADMM done')
 
-bounds = np.array([[0, 5]]*4 + [[0, 150]]*6)
 init_trust = 0.5
 beta = 0.983
+
+bounds = np.array([[0, 5]]*4 + [[0, 150]]*6)
 
 def f1(z_list, rho, global_ind, index, u_list = None, solver = False, seed=2, bounds=bounds):
     return f_4N_highD(z_list, rho, global_ind, index, 'Supplier', 1, u_list = u_list, solver = solver, seed=seed, bounds=bounds)
@@ -460,13 +462,13 @@ except:
     y_dummy = float(np.sum([pyo.value(f(z_dummy, rho, global_ind, global_ind).obj) for f in list_fi]))
     output_Coord1_10d['f_best_so_far'] = np.zeros(N_it) + y_dummy
     output_Coord1_10d['samples_at_iteration'] = np.arange(1, N_it+1)
-    output_Coord1_10d['x_best_so_fart'] = [x0_scaled]
+    output_Coord1_10d['x_best_so_far'] = [x0_scaled]
 print('Coord1 done')
 
 
 A_dict = construct_A(index_agents, global_ind, N)
 System_dataAL10d = ALADIN_Data(N, N_var, index_agents, global_ind)
-System_dataAL10d.initialize(rho, N_it, z, list_fi, A_dict)
+System_dataAL10d.initialize(rho, N_it, z, list_fi, A_dict, seed=1)
 try:
     System_dataAL10d.solve(6, init_trust, mu = 1e7, infeas_start = True)
 except:
@@ -672,9 +674,9 @@ print(pyo.value(res.obj))
 
 # raise ValueError('Error')
 
-rho = 1e5 # Second
+# rho = 1e5 # Second
 # rho = 1e3 # First
-N_it = 100
+# N_it = 100
 
 N = 2
 N_var = 3
@@ -729,7 +731,7 @@ except:
     y_dummy = float(np.sum([pyo.value(f(z_dummy, rho, global_ind, global_ind).obj) for f in list_fi]))
     output_Coord1_3d['f_best_so_far'] = np.zeros(N_it) + y_dummy
     output_Coord1_3d['samples_at_iteration'] = np.arange(1, N_it+1)
-    output_Coord1_3d['x_best_so_fart'] = [x0_scaled]
+    output_Coord1_3d['x_best_so_far'] = [x0_scaled]
 print('Coord1 done')
 
 
@@ -941,7 +943,7 @@ print(pyo.value(res.obj))
 # raise ValueError('Error')
 
 # rho = 100000
-N_it = 100
+# N_it = 100
 
 N = 2
 N_var = 6
@@ -969,7 +971,7 @@ global_ind = list(np.arange(N_var)+1)
 #     result += pyo.value(res1.obj) + pyo.value(res2.obj) 
 
 x0 = np.array([1.25, 2.5] + [3.75, 2.5] + \
-              [100, 100]) 
+              [50, 50]) 
 z = {i: x0[i-1] for i in global_ind}
 
 index_agents = {i+1: global_ind for i in range(N)}
@@ -988,7 +990,7 @@ ADMM_Scaled_system6d.solve_ADMM()
 
 print('ADMM done')
 
-bounds = np.array([[0, 5]]*2 + [[0, 150]]*4)
+bounds = np.array([[0, 5]]*4 + [[0, 150]]*2)
 init_trust = 0.5
 beta = 0.983
 
@@ -1016,7 +1018,7 @@ except:
     y_dummy = float(np.sum([pyo.value(f(z_dummy, rho, global_ind, global_ind).obj) for f in list_fi]))
     output_Coord1_6d['f_best_so_far'] = np.zeros(N_it) + y_dummy
     output_Coord1_6d['samples_at_iteration'] = np.arange(1, N_it+1)
-    output_Coord1_6d['x_best_so_fart'] = [x0_scaled]
+    output_Coord1_6d['x_best_so_far'] = [x0_scaled]
 print('Coord1 done')
 
 
