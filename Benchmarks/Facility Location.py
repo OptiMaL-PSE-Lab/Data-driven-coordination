@@ -68,9 +68,9 @@ print(pyo.value(res.obj))
 
 # raise ValueError('Error')
 
-# rho = 100000 
-rho = 1e6
-N_it = 200
+rho = 100000 
+# rho = 1e6
+N_it = 100
 
 N = 4
 N_var = 5
@@ -211,9 +211,9 @@ for j in range(len(FL_DIRECT5d['f_best_so_far'])):
         FL_DIRECT5d['f_best_so_far'][j] = float(y0)
 
 
-BO = BayesianOptimization(f=f_BO, domain=domain, X=x0_scaled.reshape((1,len(x0_scaled))), Y=y0.reshape((1,1)))
-BO.run_optimization(max_iter=N_it)
-BO_post5d = preprocess_BO(BO.Y.flatten(), y0)
+BO5d = BayesianOptimization(f=f_BO, domain=domain, X=x0_scaled.reshape((1,len(x0_scaled))), Y=y0.reshape((1,1)))
+BO5d.run_optimization(max_iter=N_it, eps=0)
+BO_post5d = preprocess_BO(BO5d.Y.flatten(), y0)
 
 fig1 = plt.figure() 
 ax1 = fig1.add_subplot()  
@@ -304,7 +304,7 @@ y = np.array([ADMM_Scaled_system5d.z_list[2][-1]])
 ax1.scatter(x, y, c = c, label=s)
 
 s = 'BO' ; c = 'saddlebrown'
-x_best = BO.X[np.argmin(BO.Y)]
+x_best = BO5d.X[np.argmin(BO5d.Y)]
 ax1.scatter(x_best[0], x_best[1], c = c, label=s)
 
 supplier_x = [data[None]['x_i'][k] for k in range(1, 3)]
@@ -512,13 +512,13 @@ def f_BO(x):
 
 domain = [{'name': 'var_'+str(i+1), 'type': 'continuous', 'domain': (0,1)} for i in range(len(x0_scaled))]
 y0 = np.array([f_BO(x0_scaled)])
-for j in range(len(FL_DIRECT5d['f_best_so_far'])):
+for j in range(len(FL_DIRECT10d['f_best_so_far'])):
     if FL_DIRECT10d['f_best_so_far'][j] > float(y0):
         FL_DIRECT10d['f_best_so_far'][j] = float(y0)
 
 BO = BayesianOptimization(f=f_BO, domain=domain, X=x0_scaled.reshape((1,len(x0_scaled))), Y=y0.reshape((1,1)))
-BO.run_optimization(max_iter=N_it)
-BO_post10d = preprocess_BO(BO.Y.flatten(), y0)
+BO.run_optimization(max_iter=N_it, eps=0)
+BO_post10d = preprocess_BO(BO.Y.flatten(), y0, N_eval=100)
 
 fig1 = plt.figure() 
 ax1 = fig1.add_subplot()  
@@ -785,9 +785,9 @@ for j in range(len(FL_DIRECT3d['f_best_so_far'])):
     if FL_DIRECT3d['f_best_so_far'][j] > float(y0):
         FL_DIRECT3d['f_best_so_far'][j] = float(y0)
 
-BO = BayesianOptimization(f=f_BO, domain=domain, X=x0_scaled.reshape((1,len(x0_scaled))), Y=y0.reshape((1,1)))
-BO.run_optimization(max_iter=N_it)
-BO_post3d = preprocess_BO(BO.Y.flatten(), y0)
+BO3d = BayesianOptimization(f=f_BO, domain=domain, X=x0_scaled.reshape((1,len(x0_scaled))), Y=y0.reshape((1,1)))
+BO3d.run_optimization(max_iter=N_it, eps=0)
+BO_post3d = preprocess_BO(BO3d.Y.flatten(), y0, N_eval=N_it)
 
 fig1 = plt.figure() 
 ax1 = fig1.add_subplot()  
@@ -878,7 +878,7 @@ y = np.array([ADMM_Scaled_system3d.z_list[2][-1]])
 ax1.scatter(x, y, c = c, label=s)
 
 s = 'BO' ; c = 'saddlebrown'
-x_best = BO.X[np.argmin(BO.Y)]
+x_best = BO3d.X[np.argmin(BO3d.Y)]
 ax1.scatter(x_best[0], x_best[1], c = c, label=s)
 
 supplier_x = [data[None]['x_i'][k] for k in range(1, 3)]
@@ -1073,9 +1073,9 @@ for j in range(len(FL_DIRECT6d['f_best_so_far'])):
         FL_DIRECT6d['f_best_so_far'][j] = float(y0)
 
 
-BO = BayesianOptimization(f=f_BO, domain=domain, X=x0_scaled.reshape((1,len(x0_scaled))), Y=y0.reshape((1,1)))
-BO.run_optimization(max_iter=N_it)
-BO_post6d = preprocess_BO(BO.Y.flatten(), y0)
+BO6d = BayesianOptimization(f=f_BO, domain=domain, X=x0_scaled.reshape((1,len(x0_scaled))), Y=y0.reshape((1,1)))
+BO6d.run_optimization(max_iter=N_it, eps=0)
+BO_post6d = preprocess_BO(BO6d.Y.flatten(), y0, N_eval=N_it)
 
 fig1 = plt.figure() 
 ax1 = fig1.add_subplot()  
@@ -1167,7 +1167,7 @@ y = np.array([ADMM_Scaled_system6d.z_list[3][-1], ADMM_Scaled_system6d.z_list[4]
 ax1.scatter(x, y, c = c, label=s)
 
 s = 'BO' ; c = 'saddlebrown'
-x_all = BO.X[np.argmin(BO.Y)]
+x_all = BO6d.X[np.argmin(BO6d.Y)]
 x = x_all[:2] ; y = x_all[2:4]
 ax1.scatter(x, y, c = c, label=s)
 

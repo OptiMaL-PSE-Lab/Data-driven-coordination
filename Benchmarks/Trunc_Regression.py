@@ -939,10 +939,10 @@ output_Coord1_6d4ag = Coordinator_ADMM_system6d4ag.solve(CUATRO, x0, bounds, ini
 
 print('Coord1 done')
 
-# A_dict = construct_A(index_agents, global_ind, N, only_global = True)
-# System_dataAL6d4ag = ALADIN_Data(N, N_var, index_agents, global_ind)
-# System_dataAL6d4ag.initialize(rho, N_it, z, list_fi, A_dict)
-# System_dataAL6d4ag.solve(6, init_trust, mu = 1e7, infeas_start = True)
+A_dict = construct_A(index_agents, global_ind, N, only_global = True)
+System_dataAL6d4ag = ALADIN_Data(N, N_var, index_agents, global_ind)
+System_dataAL6d4ag.initialize(rho, N_it, z, list_fi, A_dict)
+System_dataAL6d4ag.solve(6, init_trust, mu = 1e7, infeas_start = True)
 
 print('Coord2 done')
 
@@ -987,27 +987,27 @@ ax2 = fig2.add_subplot()
 # ax2, fig2 = trust_fig(X, Y, Z, g)  
 
 s = 'ADMM_Scaled_6d4ag'
-out = postprocessing(ax1, ax2,  s, ADMM_Scaled_system6d4ag, pyo.value(res.obj), N=N)
+out = postprocessing(ax1, ax2,  s, ADMM_Scaled_system6d4ag, pyo.value(res.obj), N=N, c='dodgerblue')
 ax1, ax2 = out
 
 s = 'CUATRO_6d4ag'
-out = postprocessing(ax1, ax2, s, output_Coord1_6d4ag, pyo.value(res.obj), coord_input = True, N=N)
+out = postprocessing(ax1, ax2, s, output_Coord1_6d4ag, pyo.value(res.obj), coord_input = True, N=N, c='darkorange')
 ax1, ax2 = out
 
 s = 'Py-BOBYQA_6d4ag'
-out = postprocessing(ax1, ax2, s, pybobyqa6d4ag, pyo.value(res.obj), coord_input = True)
+out = postprocessing(ax1, ax2, s, pybobyqa6d4ag, pyo.value(res.obj), coord_input = True, c='green')
 ax1, ax2 = out
 
 s = 'DIRECT-L_6d4ag'
-out = postprocessing(ax1, ax2, s, DIRECT6d4ag, pyo.value(res.obj), coord_input = True)
+out = postprocessing(ax1, ax2, s, DIRECT6d4ag, pyo.value(res.obj), coord_input = True, c='red')
 ax1, ax2 = out
 
-# s = 'CUATRO_2_6d4ag'
-# out = postprocessing(ax1, ax2, s, System_dataAL6d4ag, pyo.value(res.obj), ALADIN = True)
-# ax1, ax2 = out
+s = 'CUATRO_2_6d4ag'
+out = postprocessing(ax1, ax2, s, System_dataAL6d4ag, pyo.value(res.obj), ALADIN = True, init=float(y0), N=N, c='darkviolet')
+ax1, ax2 = out
 
 s = 'BO_6d4ag'
-out = postprocessing(ax1, ax2, s, BO_post6d4ag, pyo.value(res.obj), BO = True)
+out = postprocessing(ax1, ax2, s, BO_post6d4ag, pyo.value(res.obj), BO = True, c='saddlebrown')
 ax1, ax2 = out
 
 N_it_temp = N_it
@@ -1126,10 +1126,10 @@ output_Coord1_6d8ag = Coordinator_ADMM_system6d8ag.solve(CUATRO, x0, bounds, ini
                             budget = N_it, beta_red = beta)
 
 
-# A_dict = construct_A(index_agents, global_ind, N, only_global = True)
-# System_dataAL6d8ag = ALADIN_Data(N, N_var, index_agents, global_ind)
-# System_dataAL6d8ag.initialize(rho, N_it, z, list_fi, A_dict)
-# System_dataAL6d8ag.solve(6, init_trust, mu = 1e7, infeas_start = True)
+A_dict = construct_A(index_agents, global_ind, N, only_global = True)
+System_dataAL6d8ag = ALADIN_Data(N, N_var, index_agents, global_ind)
+System_dataAL6d8ag.initialize(rho, N_it, z, list_fi, A_dict)
+System_dataAL6d8ag.solve(6, init_trust, mu = 1e7, infeas_start=True)
 
 
 def f_pbqa(x):
@@ -1167,27 +1167,27 @@ ax2 = fig2.add_subplot()
 # ax2, fig2 = trust_fig(X, Y, Z, g)  
 
 s = 'ADMM_Scaled_6d8ag'
-out = postprocessing(ax1, ax2,  s, ADMM_Scaled_system6d8ag, pyo.value(res.obj), N=N)
+out = postprocessing(ax1, ax2,  s, ADMM_Scaled_system6d8ag, pyo.value(res.obj), N=N, c='dodgerblue')
 ax1, ax2 = out
 
 s = 'CUATRO_6d8ag'
-out = postprocessing(ax1, ax2, s, output_Coord1_6d8ag, pyo.value(res.obj), coord_input = True, N=N)
+out = postprocessing(ax1, ax2, s, output_Coord1_6d8ag, pyo.value(res.obj), coord_input = True, N=N,  c='darkorange')
 ax1, ax2 = out
 
 s = 'Py-BOBYQA_6d8ag'
-out = postprocessing(ax1, ax2, s, pybobyqa6d8ag, pyo.value(res.obj), coord_input = True)
+out = postprocessing(ax1, ax2, s, pybobyqa6d8ag, pyo.value(res.obj), coord_input = True, c='green')
 ax1, ax2 = out
 
 s = 'DIRECT-L_6d8ag'
-out = postprocessing(ax1, ax2, s, DIRECT6d8ag, pyo.value(res.obj), coord_input = True)
+out = postprocessing(ax1, ax2, s, DIRECT6d8ag, pyo.value(res.obj), coord_input = True, c='red')
 ax1, ax2 = out
 
-# s = 'CUATRO_2_6d8ag'
-# out = postprocessing(ax1, ax2, s, System_dataAL6d8ag, pyo.value(res.obj), ALADIN = True)
-# ax1, ax2 = out
+s = 'CUATRO_2_6d8ag'
+out = postprocessing(ax1, ax2, s, System_dataAL6d8ag, pyo.value(res.obj), ALADIN = True, init=float(y0), N=N, c='darkviolet')
+ax1, ax2 = out
 
 s = 'BO_6d8ag'
-out = postprocessing(ax1, ax2, s, BO_post6d8ag, pyo.value(res.obj), BO = True)
+out = postprocessing(ax1, ax2, s, BO_post6d8ag, pyo.value(res.obj), BO = True, c='saddlebrown')
 ax1, ax2 = out
 
 N_it_temp = N_it

@@ -89,18 +89,21 @@ def construct_A(index_dict, global_list, N_ag, only_global = False):
                 A_list[j+2][i*(N_ag-1)+j, i] = -1
     return A_list
 
-def preprocess_BO(array, init):
+def preprocess_BO(array, init, N_eval = None):
     f_best = array.copy()
-    N_eval = len(f_best)
-    f_best[0] = float(init)
+    if N_eval is None:
+        N_eval = len(f_best)
+    else:
+        N_eval = N_eval
+    f_arr = np.zeros(N_eval)
+    f_arr[0] = float(init)
     best = float(init)
     for j in range(1, N_eval):
-        if (best > f_best[j]):
-            best = f_best[j]
-        else:
-            f_best[j] = best
-
-    return f_best
+        if (j < len(f_best)):
+            if (best > f_best[j]):
+                best = f_best[j]  
+        f_arr[j] = best
+    return f_arr
 
 def average_from_list(array_total):
     f_median = np.median(array_total, axis = 0)

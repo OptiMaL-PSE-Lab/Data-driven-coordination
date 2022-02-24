@@ -41,7 +41,7 @@ actual_x = 0.398
 rho = 5000 # just done 500, now do 5000
 
 ADMM_Scaled_system = ADMM_Scaled(N, N_var, index_agents, global_ind)
-ADMM_Scaled_system.initialize_ADMM(rho, N_it, list_fi, z)
+ADMM_Scaled_system.initialize_ADMM(rho/10, N_it, list_fi, z)
 ADMM_Scaled_system.solve_ADMM()
 
 s = 'ADMM_Scaled'
@@ -166,90 +166,90 @@ fig1.savefig('../Figures/' + problem +'_conv.svg', format = "svg")
 fig2.savefig('../Figures/' + problem +'_evals.svg', format = "svg")
 
 
-# def post_2d(ax, string, result, actual_f, s = 10, c = 'k', init=None,
-#                    coord_input = False, ALADIN = False, samecoord = False, BO = False):
-#     if BO:
-#         obj_global = result.get_evaluations()[1].flatten()
-#         z_arr = result.get_evaluations()[0].flatten()
-#         N_len = min(len(obj_global), len(z_arr))
-#         ax.scatter(z_arr[:N_len], obj_global[:N_len], label=string, s=10)
-#     elif ALADIN:
-#         if samecoord:
-#             obj_arr = np.array(result.best_obj)
-#             z_arr = np.array(result.center_list)
-#             ax.scatter(z_arr, obj_arr, label=string, s=10)
-#         else:
-#             obj_global = np.sum(np.array([result.obj[i+1] for i in range(N)]), axis = 0)
-#             z_arr = np.mean([result.z_list[idx+1][global_ind[0]] for idx in range(N)], axis = 0)
-#             ax.scatter(z_arr, obj_global, label=string, s=10)
-#     elif not coord_input:
-#         obj_arr = np.sum(np.array([result.obj[i+1] for i in range(N)]), axis = 0)
-#         z_arr = np.array(result.z_list[global_ind[0]])
-#         if not samecoord:
-#             ax.scatter(z_arr[1:], obj_arr, label=string, s=10)
-#         else:
-#             ax.scatter(z_arr, obj_arr, label=string, s=10)  
-#     else:
-#         f = np.array(result['f_store'])
-#         x_list = np.array([result['x_store']]).flatten()
-#         N_len = min(len(f), len(x_list))
-#         ax.scatter(x_list[:N_len], f[:N_len], label=string, s=10)
+def post_2d(ax, string, result, actual_f, s = 10, c = 'k', init=None,
+                    coord_input = False, ALADIN = False, samecoord = False, BO = False):
+    if BO:
+        obj_global = result.get_evaluations()[1].flatten()
+        z_arr = result.get_evaluations()[0].flatten()
+        N_len = min(len(obj_global), len(z_arr))
+        ax.scatter(z_arr[:N_len], obj_global[:N_len], label=string, s=10)
+    elif ALADIN:
+        if samecoord:
+            obj_arr = np.array(result.best_obj)
+            z_arr = np.array(result.center_list)
+            ax.scatter(z_arr, obj_arr, label=string, s=10)
+        else:
+            obj_global = np.sum(np.array([result.obj[i+1] for i in range(N)]), axis = 0)
+            z_arr = np.mean([result.z_list[idx+1][global_ind[0]] for idx in range(N)], axis = 0)
+            ax.scatter(z_arr, obj_global, label=string, s=10)
+    elif not coord_input:
+        obj_arr = np.sum(np.array([result.obj[i+1] for i in range(N)]), axis = 0)
+        z_arr = np.array(result.z_list[global_ind[0]])
+        if not samecoord:
+            ax.scatter(z_arr[1:], obj_arr, label=string, s=10)
+        else:
+            ax.scatter(z_arr, obj_arr, label=string, s=10)  
+    else:
+        f = np.array(result['f_store'])
+        x_list = np.array([result['x_store']]).flatten()
+        N_len = min(len(f), len(x_list))
+        ax.scatter(x_list[:N_len], f[:N_len], label=string, s=10)
         
-#     return ax
+    return ax
 
 
-# fig = plt.figure() 
-# ax = fig.add_subplot() 
+fig = plt.figure() 
+ax = fig.add_subplot() 
 
-# s = 'ADMM_Scaled'
-# out = post_2d(ax,  s, ADMM_Scaled_system, actual_f)
-# ax=out
+s = 'ADMM_Scaled'
+out = post_2d(ax,  s, ADMM_Scaled_system, actual_f)
+ax=out
 
-# s = 'CUATRO_1'
-# out = post_2d(ax, s, output_Coord, actual_f, coord_input = True)
-# ax=out
+s = 'CUATRO_1'
+out = post_2d(ax, s, output_Coord, actual_f, coord_input = True)
+ax=out
 
-# s = 'CUATRO_2'
-# out = post_2d(ax, s, System_dataAL, actual_f, ALADIN = True, init=float(y0))
-# ax=out
+s = 'CUATRO_2'
+out = post_2d(ax, s, System_dataAL, actual_f, ALADIN = True, init=float(y0))
+ax=out
 
-# ax.scatter(actual_x, actual_f, c = 'black', label = 'Optimum')
-# ax.scatter(z[3], float(y0),  s = 25, marker = 'X', c = 'black', label = 'Starting point')
-# ax.set_xlabel('Shared variable $x_3$')
-# ax.set_ylabel('Function evaluation')
-# ax.legend(loc = 'lower right')
-# ax.set_yscale('log')
-# ax.set_xlim([-2, 6])
-# ax.set_ylim([10, 100])
+ax.scatter(actual_x, actual_f, c = 'black', label = 'Optimum')
+ax.scatter(z[3], float(y0),  s = 25, marker = 'X', c = 'black', label = 'Starting point')
+ax.set_xlabel('Shared variable $x_3$')
+ax.set_ylabel('Function evaluation')
+ax.legend(loc = 'lower right')
+ax.set_yscale('log')
+ax.set_xlim([-2, 6])
+ax.set_ylim([10, 100])
 
-# fig.savefig('../Figures/' + problem +'_1d_1.svg', format = "svg")
+fig.savefig('../Figures/' + problem +'_1d_1.svg', format = "svg")
 
 
-# fig = plt.figure() 
-# ax = fig.add_subplot() 
+fig = plt.figure() 
+ax = fig.add_subplot() 
 
-# s = 'Py-BOBYQA'
-# out = post_2d(ax, s, pybobyqa, actual_f, coord_input = True)
-# ax=out
+s = 'Py-BOBYQA'
+out = post_2d(ax, s, pybobyqa, actual_f, coord_input = True)
+ax=out
 
-# s = 'DIRECT-L'
-# out = post_2d(ax, s, DIRECT, actual_f, coord_input = True)
-# ax=out
+s = 'DIRECT-L'
+out = post_2d(ax, s, DIRECT, actual_f, coord_input = True)
+ax=out
 
-# s = 'BO'
-# out = post_2d(ax, s, BO, actual_f, BO = True)
-# ax=out
+s = 'BO'
+out = post_2d(ax, s, BO, actual_f, BO = True)
+ax=out
 
-# ax.scatter(actual_x, actual_f, c = 'black', label = 'Optimum')
-# ax.scatter(z[3], float(y0),  s = 25, marker = 'X', c = 'black', label = 'Starting point')
-# ax.set_xlabel('Shared variable $x_3$')
-# ax.set_ylabel('Function evaluation')
-# ax.legend(loc = 'lower right')
-# ax.set_yscale('log')
-# ax.set_xlim([-2, 6])
-# ax.set_ylim([10, 100])
+ax.scatter(actual_x, actual_f, c = 'black', label = 'Optimum')
+ax.scatter(z[3], float(y0),  s = 25, marker = 'X', c = 'black', label = 'Starting point')
+ax.set_xlabel('Shared variable $x_3$')
+ax.set_ylabel('Function evaluation')
+ax.legend(loc = 'lower right')
+ax.set_yscale('log')
+ax.set_xlim([-2, 6])
+ax.set_ylim([10, 100])
 
-# fig.savefig('../Figures/' + problem +'_1d_2.svg', format = "svg")
+fig.savefig('../Figures/' + problem +'_1d_2.svg', format = "svg")
 
 
 # # fig = plt.figure() 
