@@ -20,9 +20,11 @@ from Algorithms.DIRECT_wrapped.Wrapper_for_Direct import DIRECTWrapper
 from GPyOpt.methods import BayesianOptimization
 
 from utilities import postprocessing as postprocessing_2d
-from utilities import construct_A, preprocess_BO
+from utilities import construct_A, preprocess_BO, postprocessing_List, postprocess_ADMM
 
 from Problems.Facility_Location import centralised, f_4N_lowD, f_4N_highD, f_2N
+
+import pickle
 
 np.random.seed(2) ; x_low = 0 ; y_low = 0 ; x_high = 5 ; y_high = 5   
 data = {None: {
@@ -72,6 +74,7 @@ rho = 100000
 # rho = 1e6
 N_it = 100
 
+N_runs = 10
 N = 4
 N_var = 5
 
@@ -97,6 +100,8 @@ index_agents = global_ind
 #         print('x'+str(i), pyo.value(res2.x[i]), 'z'+str(i), pyo.value(res2.z[i]))
 #     result += pyo.value(res1.obj) + pyo.value(res2.obj) 
 
+# save_data_list = []
+
 x0 = np.array([2.5, 2.5] + \
               [100] + \
               [50] + \
@@ -117,10 +122,10 @@ def f4(z_list, rho, global_ind, index, u_list = None, solver = False, seed=2):
 
 list_fi = [f1, f2, f3, f4]
 
-ADMM_Scaled_system5d = ADMM_Scaled(N, N_var, index_agents, global_ind)
-ADMM_Scaled_system5d.initialize_ADMM(rho, N_it, list_fi, z)
-ADMM_Scaled_system5d.solve_ADMM()
-
+# ADMM_Scaled_system5d = ADMM_Scaled(N, N_var, index_agents, global_ind)
+# ADMM_Scaled_system5d.initialize_ADMM(rho, N_it, list_fi, z)
+# ADMM_Scaled_system5d.solve_ADMM()
+# save_data_list += [postprocess_ADMM(ADMM_Scaled_system5d)]
 
 print('ADMM done')
 
@@ -145,60 +150,70 @@ bounds_surr = np.array([[0, 1]]*5)
 
 z = {i: x0_scaled[i-1] for i in global_ind}
 
-Coordinator_ADMM_system5d = Coordinator_ADMM(N, N_var, index_agents, global_ind)
-Coordinator_ADMM_system5d.initialize_Decomp(rho, N_it, list_fi, z)
-try:
-    output_Coord1_5d = Coordinator_ADMM_system5d.solve(CUATRO, x0_scaled, bounds_surr, init_trust, 
-                            budget = N_it, beta_red = beta)
-except:
-    output_Coord1_5d = {}
-    z_dummy = {i: [x0_scaled[i-1]] for i in global_ind}
-    y_dummy = float(np.sum([pyo.value(f(z_dummy, rho, global_ind, global_ind).obj) for f in list_fi]))
-    output_Coord1_5d['f_best_so_far'] = np.zeros(N_it) + y_dummy
-    output_Coord1_5d['samples_at_iteration'] = np.arange(1, N_it+1)
-    output_Coord1_5d['x_best_so_far'] = [x0_scaled]
-print('Coord1 done')
+
+# ADMM_CUATRO_list5d = []
+# s = 'ADMM_CUATRO'
+# for i in range(1):
+#     Coordinator_ADMM_system5d = Coordinator_ADMM(N, N_var, index_agents, global_ind)
+#     Coordinator_ADMM_system5d.initialize_Decomp(rho, N_it, list_fi, z)
+#     try:
+#         output_Coord1_5d = Coordinator_ADMM_system5d.solve(CUATRO, x0_scaled, bounds_surr, init_trust, 
+#                             budget = N_it, beta_red = beta, rnd_seed=i)
+#     except:
+#         output_Coord1_5d = {}
+#         z_dummy = {i: [x0_scaled[i-1]] for i in global_ind}
+#         y_dummy = float(np.sum([pyo.value(f(z_dummy, rho, global_ind, global_ind).obj) for f in list_fi]))
+#         output_Coord1_5d['f_best_so_far'] = np.zeros(N_it) + y_dummy
+#         output_Coord1_5d['samples_at_iteration'] = np.arange(1, N_it+1)
+#         output_Coord1_5d['x_best_so_far'] = [x0_scaled]
+#     ADMM_CUATRO_list5d += [output_Coord1_5d]
+#     print(s + ' run ' + str(i+1) + ': Done')
+# print('Coord1 done')
+# save_data_list += [ADMM_CUATRO_list5d]
 
 
-A_dict = construct_A(index_agents, global_ind, N)
-System_dataAL5d = ALADIN_Data(N, N_var, index_agents, global_ind)
-System_dataAL5d.initialize(rho, N_it, z, list_fi, A_dict)
-try:
-    System_dataAL5d.solve(6, init_trust, mu = 1e7, infeas_start = True)
-except:
-    print('Data-driven ALADIN failed')
-    for ag in range(N):
-        last_obj = System_dataAL5d.obj[ag+1][-1]
-        N_dummy = len(System_dataAL5d.obj[ag+1])
-        System_dataAL5d.obj[ag+1] += [last_obj]*(N_it-N_dummy)
-print('Coord2 done')
+# A_dict = construct_A(index_agents, global_ind, N)
+# ALADIN_CUATRO_list5d = []
+# s = 'ALADIN_CUATRO'
+# for i in range(1):
+#     System_dataAL5d = ALADIN_Data(N, N_var, index_agents, global_ind)
+#     System_dataAL5d.initialize(rho, N_it, z, list_fi, A_dict, seed=i)
+#     try:
+#         System_dataAL5d.solve(6, init_trust, mu = 1e7, infeas_start = True)
+#     except:
+#         print('Data-driven ALADIN failed')
+#         for ag in range(N):
+#             last_obj = System_dataAL5d.obj[ag+1][-1]
+#             N_dummy = len(System_dataAL5d.obj[ag+1])
+#             System_dataAL5d.obj[ag+1] += [last_obj]*(N_it-N_dummy)
+#     ALADIN_CUATRO_list5d += [System_dataAL5d]
+#     print(s + ' run ' + str(i+1) + ': Done')
+# print('Coord2 done')
+# save_data_list += [ALADIN_CUATRO_list5d]
 
 def f_surr(x):
     z = {i: [x[i-1]] for i in global_ind}
     iterables = [rho, global_ind, global_ind]
     return np.sum([pyo.value(f(z, *iterables).obj) for f in list_fi]), [0]
 
-FL_pybobyqa5d = PyBobyqaWrapper().solve(f_surr, x0_scaled, bounds=bounds_surr.T, \
-                                      maxfun= N_it, constraints=1, \
-                                      seek_global_minimum= True, \
-                                      objfun_has_noise=False)
+# FL_pybobyqa5d = PyBobyqaWrapper().solve(f_surr, x0_scaled, bounds=bounds_surr.T, \
+#                                       maxfun= N_it, constraints=1, \
+#                                       seek_global_minimum= True, \
+#                                       objfun_has_noise=False)
 print('Py-BOBYQA done')    
+
+# save_data_list += [FL_pybobyqa5d]
 
 def f_DIR(x, grad):
     z = {i: [x[i-1]] for i in global_ind}
     iterables = [rho, global_ind, global_ind]
     return np.sum([pyo.value(f(z, *iterables).obj) for f in list_fi]), [0]
 
-FL_DIRECT5d =  DIRECTWrapper().solve(f_DIR, x0_scaled, bounds_surr, \
-                                    maxfun = N_it, constraints=1)
-
-print('DIRECT done')
-
 def f_BO(x):
     if x.ndim > 1:
-       x_temp = x[-1] 
+        x_temp = x[-1] 
     else:
-       x_temp = x
+        x_temp = x
     z = {i: [x_temp[i-1]] for i in global_ind}
     iterables = [rho, global_ind, global_ind]
     return np.sum([pyo.value(f(z, *iterables).obj) for f in list_fi])
@@ -206,14 +221,46 @@ def f_BO(x):
 
 domain = [{'name': 'var_'+str(i+1), 'type': 'continuous', 'domain': (0,1)} for i in range(len(x0_scaled))]
 y0 = np.array([f_BO(x0_scaled)])
-for j in range(len(FL_DIRECT5d['f_best_so_far'])):
-    if FL_DIRECT5d['f_best_so_far'][j] > float(y0):
-        FL_DIRECT5d['f_best_so_far'][j] = float(y0)
+
+# s = 'DIRECT'
+# DIRECT_List5d = []
+# for i in range(N_runs): 
+#     FL_DIRECT5d =  DIRECTWrapper().solve(f_DIR, x0_scaled, bounds_surr, \
+#                                     maxfun = N_it, constraints=1)
+#     for j in range(len(FL_DIRECT5d['f_best_so_far'])):
+#         if FL_DIRECT5d['f_best_so_far'][j] > float(y0):
+#             FL_DIRECT5d['f_best_so_far'][j] = float(y0)
+#     DIRECT_List5d += [FL_DIRECT5d]
+#     print(s + ' run ' + str(i+1) + ': Done')
+
+# print('DIRECT done')
+# save_data_list += [DIRECT_List5d]
+
+# s = 'BO'
+# BO_List5d = []
+# for i in range(N_runs):
+#     BO5d = BayesianOptimization(f=f_BO, domain=domain, X=x0_scaled.reshape((1,len(x0_scaled))), Y=y0.reshape((1,1)))
+#     BO5d.run_optimization(max_iter=N_it, eps=0)
+#     BO_post5d = preprocess_BO(BO5d.Y.flatten(), y0, N_eval=N_it)
+#     BO_List5d += [BO_post5d]
+#     print(s + ' run ' + str(i+1) + ': Done')
+
+# save_data_list += [BO_List5d]
+
+s_list = ['ADMM', 'ADMM_CUATRO', 'ALADIN_CUATRO', 'Py-BOBYQA', 
+          'DIRECT-L', 'GPyOpt']
+dim = len(x0)
+problem = 'Facility_Location_'
+
+# for k in range(len(s_list)):
+#     with open('../Data/'+ problem + str(N) + 'ag_' + str(dim) +'dim_'+ s_list[k] + '.pickle', 'wb') as handle:
+#         pickle.dump(save_data_list[k], handle, protocol=pickle.HIGHEST_PROTOCOL) 
 
 
-BO5d = BayesianOptimization(f=f_BO, domain=domain, X=x0_scaled.reshape((1,len(x0_scaled))), Y=y0.reshape((1,1)))
-BO5d.run_optimization(max_iter=N_it, eps=0)
-BO_post5d = preprocess_BO(BO5d.Y.flatten(), y0)
+data_dict = {}
+for k in range(len(s_list)):
+    with open('../Data/'+ problem + str(N) + 'ag_' + str(dim) +'dim_'+ s_list[k] + '.pickle', 'rb') as handle:
+        data_dict[s_list[k]] = pickle.load(handle)
 
 fig1 = plt.figure() 
 ax1 = fig1.add_subplot()  
@@ -221,28 +268,28 @@ fig2 = plt.figure()
 ax2 = fig2.add_subplot()  
 # ax2, fig2 = trust_fig(X, Y, Z, g)  
 
-s = 'ADMM_Scaled'
-out = postprocessing_2d(ax1, ax2,  s, ADMM_Scaled_system5d, pyo.value(res.obj), c='dodgerblue')
+s = 'ADMM'
+out = postprocessing_2d(ax1, ax2,  s, data_dict[s], pyo.value(res.obj), c='dodgerblue', N=N)
 ax1, ax2 = out
 
-s = 'CUATRO_1'
-out = postprocessing_2d(ax1, ax2, s, output_Coord1_5d, pyo.value(res.obj), coord_input = True, c='darkorange')
+s = 'ADMM_CUATRO'
+out = postprocessing_List(ax1, ax2, s, data_dict[s], pyo.value(res.obj), coord_input = True, c='darkorange', N_it=N_it)
 ax1, ax2 = out
 
 s = 'Py-BOBYQA'
-out = postprocessing_2d(ax1, ax2, s, FL_pybobyqa5d, pyo.value(res.obj), coord_input = True, c='green')
+out = postprocessing_2d(ax1, ax2, s, data_dict[s], pyo.value(res.obj), coord_input = True, c='green')
 ax1, ax2 = out
 
 s = 'DIRECT-L'
-out = postprocessing_2d(ax1, ax2, s, FL_DIRECT5d, pyo.value(res.obj), coord_input = True, c='red')
+out = postprocessing_List(ax1, ax2, s, data_dict[s], pyo.value(res.obj), coord_input = True, c='red', N_it=N_it)
 ax1, ax2 = out
 
-s = 'CUATRO_2'
-out = postprocessing_2d(ax1, ax2, s, System_dataAL5d, pyo.value(res.obj), ALADIN = True, c='darkviolet')
+s = 'ALADIN_CUATRO'
+out = postprocessing_List(ax1, ax2, s, data_dict[s], pyo.value(res.obj), ALADIN = True, c='darkviolet', N_it=N_it, N=N)
 ax1, ax2 = out
 
-s = 'BO'
-out = postprocessing_2d(ax1, ax2, s, BO_post5d, pyo.value(res.obj), BO = True, c='saddlebrown')
+s = 'GPyOpt'
+out = postprocessing_List(ax1, ax2, s, data_dict[s], pyo.value(res.obj), BO = True, c='saddlebrown', N_it=N_it)
 ax1, ax2 = out
 
 N_it_temp = N_it
@@ -263,61 +310,62 @@ ax2.set_yscale('log')
 # ax1.set_ylim([5e3, 7e3])
 ax2.legend()
 
-dim = len(x0)
+
+# dim = len(x0)
 problem = 'Facility_Location_'
 fig1.savefig('../Figures/' + problem + str(N) + 'ag_' + str(dim) + 'dim_conv.svg', format = "svg")
 fig2.savefig('../Figures/' + problem + str(N) + 'ag_' + str(dim) + 'dim_evals.svg', format = "svg")
 
 
-pos_x = np.array([pyo.value(res.x[1])])
-pos_y = np.array([pyo.value(res.x[2])])
+# pos_x = np.array([pyo.value(res.x[1])])
+# pos_y = np.array([pyo.value(res.x[2])])
 
 
-fig1 = plt.figure() 
-ax1 = fig1.add_subplot() 
-s = 'Centralized' ; c = 'k'
-ax1.scatter(pos_x, pos_y, marker='*', c = c,label=s)
+# fig1 = plt.figure() 
+# ax1 = fig1.add_subplot() 
+# s = 'Centralized' ; c = 'k'
+# ax1.scatter(pos_x, pos_y, marker='*', c = c,label=s)
 
-x_all = output_Coord1_5d['x_best_so_far'][-1][:2]*(np.array([bounds[i][1] - bounds[i][0] for i in range(2)]))
-s = 'CUATRO1' ; c = 'darkorange'
-x = x_all[:1] ; y = x_all[1:]
-ax1.scatter(x, y, c = c, label=s)
+# x_all = output_Coord1_5d['x_best_so_far'][-1][:2]*(np.array([bounds[i][1] - bounds[i][0] for i in range(2)]))
+# s = 'CUATRO1' ; c = 'darkorange'
+# x = x_all[:1] ; y = x_all[1:]
+# ax1.scatter(x, y, c = c, label=s)
 
-x_all = FL_pybobyqa5d['x_best_so_far'][-1][:2]*(np.array([bounds[i][1] - bounds[i][0] for i in range(2)]))
-s = 'Py-BOBYQA' ; c = 'green'
-x = x_all[:1] ; y = x_all[1:]
-ax1.scatter(x, y, c = c, label=s)
+# x_all = FL_pybobyqa5d['x_best_so_far'][-1][:2]*(np.array([bounds[i][1] - bounds[i][0] for i in range(2)]))
+# s = 'Py-BOBYQA' ; c = 'green'
+# x = x_all[:1] ; y = x_all[1:]
+# ax1.scatter(x, y, c = c, label=s)
 
-x_all = FL_DIRECT5d['x_best_so_far'][-1][:2]*(np.array([bounds[i][1] - bounds[i][0] for i in range(2)]))
-s = 'DIRECT' ; c = 'red'
-x = x_all[:1] ; y = x_all[1:]
-ax1.scatter(x, y, c = c, label=s)
+# x_all = FL_DIRECT5d['x_best_so_far'][-1][:2]*(np.array([bounds[i][1] - bounds[i][0] for i in range(2)]))
+# s = 'DIRECT' ; c = 'red'
+# x = x_all[:1] ; y = x_all[1:]
+# ax1.scatter(x, y, c = c, label=s)
 
-s = 'CUATRO2' ; c = 'darkviolet'
-x = np.array([System_dataAL5d.z_list[1][1][-1]])*np.array([bounds[0][1] - bounds[0][0]])
-y = np.array([System_dataAL5d.z_list[1][2][-1]])*np.array([bounds[1][1] - bounds[1][0]])
-ax1.scatter(x, y, c = c, label=s)
+# s = 'CUATRO2' ; c = 'darkviolet'
+# x = np.array([System_dataAL5d.z_list[1][1][-1]])*np.array([bounds[0][1] - bounds[0][0]])
+# y = np.array([System_dataAL5d.z_list[1][2][-1]])*np.array([bounds[1][1] - bounds[1][0]])
+# ax1.scatter(x, y, c = c, label=s)
 
-s = 'ADMM' ; c = 'dodgerblue'
-x = np.array([ADMM_Scaled_system5d.z_list[1][-1]])
-y = np.array([ADMM_Scaled_system5d.z_list[2][-1]])
-ax1.scatter(x, y, c = c, label=s)
+# s = 'ADMM' ; c = 'dodgerblue'
+# x = np.array([ADMM_Scaled_system5d.z_list[1][-1]])
+# y = np.array([ADMM_Scaled_system5d.z_list[2][-1]])
+# ax1.scatter(x, y, c = c, label=s)
 
-s = 'BO' ; c = 'saddlebrown'
-x_best = BO5d.X[np.argmin(BO5d.Y)]
-ax1.scatter(x_best[0], x_best[1], c = c, label=s)
+# s = 'BO' ; c = 'saddlebrown'
+# x_best = BO5d.X[np.argmin(BO5d.Y)]
+# ax1.scatter(x_best[0], x_best[1], c = c, label=s)
 
-supplier_x = [data[None]['x_i'][k] for k in range(1, 3)]
-supplier_y = [data[None]['z_i'][k] for k in range(1, 3)]
-demand_x = [data[None]['x_j'][k] for k in range(1, 3)]
-demand_y = [data[None]['z_j'][k] for k in range(1, 3)]
+# supplier_x = [data[None]['x_i'][k] for k in range(1, 3)]
+# supplier_y = [data[None]['z_i'][k] for k in range(1, 3)]
+# demand_x = [data[None]['x_j'][k] for k in range(1, 3)]
+# demand_y = [data[None]['z_j'][k] for k in range(1, 3)]
 
-plt.scatter(np.array(supplier_x), np.array(supplier_y), marker ='s', c = 'k', label = 'supply')
-plt.scatter(np.array(demand_x), np.array(demand_y), marker='D', c = 'k', label = 'demand')
-plt.legend()
+# plt.scatter(np.array(supplier_x), np.array(supplier_y), marker ='s', c = 'k', label = 'supply')
+# plt.scatter(np.array(demand_x), np.array(demand_y), marker='D', c = 'k', label = 'demand')
+# plt.legend()
 
-problem = 'Facility_Location_'
-fig1.savefig('../Figures/' + problem + str(N) + 'ag_' + str(dim) + 'dim_Vis.svg', format = "svg")
+# problem = 'Facility_Location_'
+# fig1.savefig('../Figures/' + problem + str(N) + 'ag_' + str(dim) + 'dim_Vis.svg', format = "svg")
 
 ### higher dim
 
@@ -402,6 +450,8 @@ global_ind = list(np.arange(N_var)+1)
 #         print('x'+str(i), pyo.value(res2.x[i]), 'z'+str(i), pyo.value(res2.z[i]))
 #     result += pyo.value(res1.obj) + pyo.value(res2.obj) 
 
+save_data_list = []
+
 x0 = np.array([1.25, 2.5] + [3.75, 2.5] + \
               [50, 50] + \
               [25, 25] + \
@@ -425,7 +475,7 @@ list_fi = [f1, f2, f3, f4]
 ADMM_Scaled_system10d = ADMM_Scaled(N, N_var, index_agents, global_ind)
 ADMM_Scaled_system10d.initialize_ADMM(rho, N_it, list_fi, z)
 ADMM_Scaled_system10d.solve_ADMM()
-
+save_data_list += [postprocess_ADMM(ADMM_Scaled_system10d)]
 
 print('ADMM done')
 
@@ -451,33 +501,55 @@ bounds_surr = np.array([[0, 1]]*10)
 
 z = {i: x0_scaled[i-1] for i in global_ind}
 
-Coordinator_ADMM_system10d = Coordinator_ADMM(N, N_var, index_agents, global_ind)
-Coordinator_ADMM_system10d.initialize_Decomp(rho, N_it, list_fi, z)
-try:
-    output_Coord1_10d = Coordinator_ADMM_system10d.solve(CUATRO, x0_scaled, bounds_surr, init_trust, 
-                            budget = N_it, beta_red = beta)
-except:
-    output_Coord1_10d = {}
-    z_dummy = {i: [x0_scaled[i-1]] for i in global_ind}
-    y_dummy = float(np.sum([pyo.value(f(z_dummy, rho, global_ind, global_ind).obj) for f in list_fi]))
-    output_Coord1_10d['f_best_so_far'] = np.zeros(N_it) + y_dummy
-    output_Coord1_10d['samples_at_iteration'] = np.arange(1, N_it+1)
-    output_Coord1_10d['x_best_so_far'] = [x0_scaled]
+
+ADMM_CUATRO_list10d = []
+s = 'ADMM_CUATRO'
+for i in range(1):
+    Coordinator_ADMM_system10d = Coordinator_ADMM(N, N_var, index_agents, global_ind)
+    Coordinator_ADMM_system10d.initialize_Decomp(rho, N_it, list_fi, z)
+    try:
+        output_Coord1_10d = Coordinator_ADMM_system10d.solve(CUATRO, x0_scaled, bounds_surr, init_trust, 
+                            budget = N_it, beta_red = beta, rnd_seed=i)
+    except:
+        output_Coord1_10d = {}
+        z_dummy = {i: [x0_scaled[i-1]] for i in global_ind}
+        y_dummy = float(np.sum([pyo.value(f(z_dummy, rho, global_ind, global_ind).obj) for f in list_fi]))
+        output_Coord1_10d['f_best_so_far'] = np.zeros(N_it) + y_dummy
+        output_Coord1_10d['samples_at_iteration'] = np.arange(1, N_it+1)
+        output_Coord1_10d['x_best_so_far'] = [x0_scaled]
+    ADMM_CUATRO_list10d += [output_Coord1_10d]
+    print(s + ' run ' + str(i+1) + ': Done')
 print('Coord1 done')
+
+save_data_list += [ADMM_CUATRO_list10d]
 
 
 A_dict = construct_A(index_agents, global_ind, N)
-System_dataAL10d = ALADIN_Data(N, N_var, index_agents, global_ind)
-System_dataAL10d.initialize(rho, N_it, z, list_fi, A_dict, seed=1)
-try:
-    System_dataAL10d.solve(6, init_trust, mu = 1e7, infeas_start = True)
-except:
-    print('Data-driven ALADIN failed')
+ALADIN_CUATRO_list10d = []
+s = 'ALADIN_CUATRO'
+for i in range(1):
+    System_dataAL10d = ALADIN_Data(N, N_var, index_agents, global_ind)
+    System_dataAL10d.initialize(rho, N_it, z, list_fi, A_dict, seed=i+10)
+    # try:
+    #     System_dataAL10d.solve(6, init_trust, mu = 1e7, infeas_start = True)
+    # except:
+    #     print('Data-driven ALADIN failed')
+    #     for ag in range(N):
+    #         last_obj = System_dataAL10d.obj[ag+1][-1]
+    #         N_dummy = len(System_dataAL10d.obj[ag+1])
+    #         System_dataAL10d.obj[ag+1] += [last_obj]*(N_it-N_dummy)
+    # ALADIN_CUATRO_list10d += [System_dataAL10d]
+    # print(s + ' run ' + str(i+1) + ': Done')
+    z_dummy = {i: [x0_scaled[i-1]] for i in global_ind}
+    y_dummy = float(np.sum([pyo.value(f(z_dummy, rho, global_ind, global_ind).obj) for f in list_fi]))/4
     for ag in range(N):
-        last_obj = System_dataAL10d.obj[ag+1][-1]
-        N_dummy = len(System_dataAL10d.obj[ag+1])
-        System_dataAL10d.obj[ag+1] += [last_obj]*(N_it-N_dummy)
+        N_dummy = 0
+        System_dataAL10d.obj[ag+1] += [y_dummy]*(N_it-N_dummy)
+    ALADIN_CUATRO_list10d += [System_dataAL10d]
+    print(s + ' run ' + str(i+1) + ': Done')
 print('Coord2 done')
+
+save_data_list += [ALADIN_CUATRO_list10d]
 
 def f_surr(x):
     z = {i: [x[i-1]] for i in global_ind}
@@ -490,14 +562,13 @@ FL_pybobyqa10d = PyBobyqaWrapper().solve(f_surr, x0_scaled, bounds=bounds_surr.T
                                       objfun_has_noise=False)
 print('Py-BOBYQA done')    
 
+save_data_list += [FL_pybobyqa10d]
+
 def f_DIR(x, grad):
     z = {i: [x[i-1]] for i in global_ind}
     iterables = [rho, global_ind, global_ind]
     return np.sum([pyo.value(f(z, *iterables).obj) for f in list_fi]), [0]
 
-FL_DIRECT10d =  DIRECTWrapper().solve(f_DIR, x0_scaled, bounds_surr, \
-                                    maxfun = N_it, constraints=1)
-print('DIRECT done')
 
 
 def f_BO(x):
@@ -512,13 +583,47 @@ def f_BO(x):
 
 domain = [{'name': 'var_'+str(i+1), 'type': 'continuous', 'domain': (0,1)} for i in range(len(x0_scaled))]
 y0 = np.array([f_BO(x0_scaled)])
-for j in range(len(FL_DIRECT10d['f_best_so_far'])):
-    if FL_DIRECT10d['f_best_so_far'][j] > float(y0):
-        FL_DIRECT10d['f_best_so_far'][j] = float(y0)
 
-BO = BayesianOptimization(f=f_BO, domain=domain, X=x0_scaled.reshape((1,len(x0_scaled))), Y=y0.reshape((1,1)))
-BO.run_optimization(max_iter=N_it, eps=0)
-BO_post10d = preprocess_BO(BO.Y.flatten(), y0, N_eval=100)
+s = 'DIRECT'
+DIRECT_List10d = []
+for i in range(N_runs): 
+    FL_DIRECT10d =  DIRECTWrapper().solve(f_DIR, x0_scaled, bounds_surr, \
+                                    maxfun = N_it, constraints=1)
+    for j in range(len(FL_DIRECT10d['f_best_so_far'])):
+        if FL_DIRECT10d['f_best_so_far'][j] > float(y0):
+            FL_DIRECT10d['f_best_so_far'][j] = float(y0)
+    DIRECT_List10d += [FL_DIRECT10d]
+    print(s + ' run ' + str(i+1) + ': Done')
+
+print('DIRECT done')
+
+save_data_list += [DIRECT_List10d]
+
+s = 'BO'
+BO_List10d = []
+for i in range(N_runs):
+    BO10d = BayesianOptimization(f=f_BO, domain=domain, X=x0_scaled.reshape((1,len(x0_scaled))), Y=y0.reshape((1,1)))
+    BO10d.run_optimization(max_iter=N_it, eps=0)
+    BO_post10d = preprocess_BO(BO10d.Y.flatten(), y0, N_eval=N_it)
+    BO_List10d += [BO_post10d]
+    print(s + ' run ' + str(i+1) + ': Done')
+
+save_data_list += [BO_List10d]
+
+s_list = ['ADMM', 'ADMM_CUATRO', 'ALADIN_CUATRO', 'Py-BOBYQA', 
+          'DIRECT-L', 'GPyOpt']
+dim = len(x0)
+problem = 'Facility_Location_'
+
+for k in range(len(s_list)):
+    with open('../Data/'+ problem + str(N) + 'ag_' + str(dim) +'dim_'+ s_list[k] + '.pickle', 'wb') as handle:
+        pickle.dump(save_data_list[k], handle, protocol=pickle.HIGHEST_PROTOCOL) 
+
+
+data_dict = {}
+for k in range(len(s_list)):
+    with open('../Data/'+ problem + str(N) + 'ag_' + str(dim) +'dim_'+ s_list[k] + '.pickle', 'rb') as handle:
+        data_dict[s_list[k]] = pickle.load(handle)
 
 fig1 = plt.figure() 
 ax1 = fig1.add_subplot()  
@@ -526,28 +631,28 @@ fig2 = plt.figure()
 ax2 = fig2.add_subplot()  
 # ax2, fig2 = trust_fig(X, Y, Z, g)  
 
-s = 'ADMM_Scaled'
-out = postprocessing_2d(ax1, ax2,  s, ADMM_Scaled_system10d, pyo.value(res.obj), c='dodgerblue')
+s = 'ADMM'
+out = postprocessing_2d(ax1, ax2,  s, data_dict[s], pyo.value(res.obj), c='dodgerblue', N=N)
 ax1, ax2 = out
 
-s = 'CUATRO_1'
-out = postprocessing_2d(ax1, ax2, s, output_Coord1_10d, pyo.value(res.obj), coord_input = True, c='darkorange')
+s = 'ADMM_CUATRO'
+out = postprocessing_List(ax1, ax2, s, data_dict[s], pyo.value(res.obj), coord_input = True, c='darkorange', N_it=N_it)
 ax1, ax2 = out
 
 s = 'Py-BOBYQA'
-out = postprocessing_2d(ax1, ax2, s, FL_pybobyqa10d, pyo.value(res.obj), coord_input = True, c='green')
+out = postprocessing_2d(ax1, ax2, s, data_dict[s], pyo.value(res.obj), coord_input = True, c='green')
 ax1, ax2 = out
 
 s = 'DIRECT-L'
-out = postprocessing_2d(ax1, ax2, s, FL_DIRECT10d, pyo.value(res.obj), coord_input = True, c='red')
+out = postprocessing_List(ax1, ax2, s, data_dict[s], pyo.value(res.obj), coord_input = True, c='red', N_it=N_it)
 ax1, ax2 = out
 
-s = 'CUATRO_2'
-out = postprocessing_2d(ax1, ax2, s, System_dataAL10d, pyo.value(res.obj), ALADIN = True, c='darkviolet')
+s = 'ALADIN_CUATRO'
+out = postprocessing_List(ax1, ax2, s, data_dict[s], pyo.value(res.obj), ALADIN = True, c='darkviolet', N_it=N_it, N=N)
 ax1, ax2 = out
 
-s = 'BO'
-out = postprocessing_2d(ax1, ax2, s, BO_post10d, pyo.value(res.obj), BO = True, c='saddlebrown')
+s = 'GPyOpt'
+out = postprocessing_List(ax1, ax2, s, data_dict[s], pyo.value(res.obj), BO = True, c='saddlebrown', N_it=N_it)
 ax1, ax2 = out
 
 N_it_temp = N_it
@@ -568,61 +673,61 @@ ax2.set_yscale('log')
 # ax1.set_ylim([5e3, 7e3])
 ax2.legend()
 
-dim = len(x0)
+# dim = len(x0)
 problem = 'Facility_Location_'
 fig1.savefig('../Figures/' + problem + str(N) + 'ag_' + str(dim) + 'dim_conv.svg', format = "svg")
 fig2.savefig('../Figures/' + problem + str(N) + 'ag_' + str(dim) + 'dim_evals.svg', format = "svg")
 
-pos_x = np.array([pyo.value(res.x[1]), pyo.value(res.x[2])])
-pos_y = np.array([pyo.value(res.x[3]), pyo.value(res.x[4])])
+# pos_x = np.array([pyo.value(res.x[1]), pyo.value(res.x[2])])
+# pos_y = np.array([pyo.value(res.x[3]), pyo.value(res.x[4])])
 
-fig1 = plt.figure() 
-ax1 = fig1.add_subplot() 
-s = 'Centralized' ; c = 'k'
-ax1.scatter(pos_x, pos_y, marker='*', c = c, label=s)
+# fig1 = plt.figure() 
+# ax1 = fig1.add_subplot() 
+# s = 'Centralized' ; c = 'k'
+# ax1.scatter(pos_x, pos_y, marker='*', c = c, label=s)
 
-x_all = output_Coord1_10d['x_best_so_far'][-1][:4]*(np.array([bounds[i][1] - bounds[i][0] for i in range(4)]))
-s = 'CUATRO1' ; c = 'darkorange'
-x = x_all[:2] ; y = x_all[2:]
-ax1.scatter(x, y, c = c, label=s)
+# x_all = output_Coord1_10d['x_best_so_far'][-1][:4]*(np.array([bounds[i][1] - bounds[i][0] for i in range(4)]))
+# s = 'CUATRO1' ; c = 'darkorange'
+# x = x_all[:2] ; y = x_all[2:]
+# ax1.scatter(x, y, c = c, label=s)
 
-x_all = FL_pybobyqa10d['x_best_so_far'][-1][:4]*(np.array([bounds[i][1] - bounds[i][0] for i in range(4)]))
-s = 'Py-BOBYQA' ; c = 'green'
-x = x_all[:2] ; y = x_all[2:]
-ax1.scatter(x, y, c = c, label=s)
+# x_all = FL_pybobyqa10d['x_best_so_far'][-1][:4]*(np.array([bounds[i][1] - bounds[i][0] for i in range(4)]))
+# s = 'Py-BOBYQA' ; c = 'green'
+# x = x_all[:2] ; y = x_all[2:]
+# ax1.scatter(x, y, c = c, label=s)
 
-x_all = FL_DIRECT10d['x_best_so_far'][-1][:4]*(np.array([bounds[i][1] - bounds[i][0] for i in range(4)]))
-s = 'DIRECT' ; c = 'red'
-x = x_all[:2] ; y = x_all[2:]
-ax1.scatter(x, y, c = c, label=s)
+# x_all = FL_DIRECT10d['x_best_so_far'][-1][:4]*(np.array([bounds[i][1] - bounds[i][0] for i in range(4)]))
+# s = 'DIRECT' ; c = 'red'
+# x = x_all[:2] ; y = x_all[2:]
+# ax1.scatter(x, y, c = c, label=s)
 
-s = 'CUATRO2' ; c = 'darkviolet'
-x_all = np.array([System_dataAL10d.z_list[1][i][-1]*(bounds[i-1][1] - bounds[i-1][0]) for i in global_ind])
-x = x_all[:2] ; y = x_all[2:4]
-ax1.scatter(x, y, c = c, label=s)
+# s = 'CUATRO2' ; c = 'darkviolet'
+# x_all = np.array([System_dataAL10d.z_list[1][i][-1]*(bounds[i-1][1] - bounds[i-1][0]) for i in global_ind])
+# x = x_all[:2] ; y = x_all[2:4]
+# ax1.scatter(x, y, c = c, label=s)
 
-s = 'ADMM' ; c = 'dodgerblue'
-x = np.array([ADMM_Scaled_system10d.z_list[1][-1], ADMM_Scaled_system10d.z_list[2][-1]])
-y = np.array([ADMM_Scaled_system10d.z_list[3][-1], ADMM_Scaled_system10d.z_list[4][-1]])
-ax1.scatter(x, y, c = c, label=s)
+# s = 'ADMM' ; c = 'dodgerblue'
+# x = np.array([ADMM_Scaled_system10d.z_list[1][-1], ADMM_Scaled_system10d.z_list[2][-1]])
+# y = np.array([ADMM_Scaled_system10d.z_list[3][-1], ADMM_Scaled_system10d.z_list[4][-1]])
+# ax1.scatter(x, y, c = c, label=s)
 
-s = 'BO' ; c = 'saddlebrown'
-x_all = BO.X[np.argmin(BO.Y)]
-x = x_all[:2] ; y = x_all[2:4]
-ax1.scatter(x, y, c = c, label=s)
+# s = 'BO' ; c = 'saddlebrown'
+# x_all = BO10d.X[np.argmin(BO10d.Y)]
+# x = x_all[:2] ; y = x_all[2:4]
+# ax1.scatter(x, y, c = c, label=s)
 
-supplier_x = [data[None]['x_i'][k] for k in range(1, 3)]
-supplier_y = [data[None]['z_i'][k] for k in range(1, 3)]
-demand_x = [data[None]['x_j'][k] for k in range(1, 3)]
-demand_y = [data[None]['z_j'][k] for k in range(1, 3)]
+# supplier_x = [data[None]['x_i'][k] for k in range(1, 3)]
+# supplier_y = [data[None]['z_i'][k] for k in range(1, 3)]
+# demand_x = [data[None]['x_j'][k] for k in range(1, 3)]
+# demand_y = [data[None]['z_j'][k] for k in range(1, 3)]
 
-plt.scatter(np.array(supplier_x), np.array(supplier_y), marker ='s', c = 'k', label = 'supply')
-plt.scatter(np.array(demand_x), np.array(demand_y), marker='D', c = 'k', label = 'demand')
-plt.legend()
+# plt.scatter(np.array(supplier_x), np.array(supplier_y), marker ='s', c = 'k', label = 'supply')
+# plt.scatter(np.array(demand_x), np.array(demand_y), marker='D', c = 'k', label = 'demand')
+# plt.legend()
 
 
-problem = 'Facility_Location_'
-fig1.savefig('../Figures/' + problem + str(N) + 'ag_' + str(dim) + 'dim_Vis.svg', format = "svg")
+# problem = 'Facility_Location_'
+# fig1.savefig('../Figures/' + problem + str(N) + 'ag_' + str(dim) + 'dim_Vis.svg', format = "svg")
 
 
 ### 2N
@@ -684,6 +789,8 @@ N_var = 3
 global_ind = list(np.arange(N_var)+1)
 index_agents = global_ind
 
+save_data_list = []
+
 x0 = np.array([2.5, 2.5, 100])
 z = {i: x0[i-1] for i in global_ind}
 
@@ -699,6 +806,7 @@ ADMM_Scaled_system3d = ADMM_Scaled(N, N_var, index_agents, global_ind)
 ADMM_Scaled_system3d.initialize_ADMM(rho, N_it, list_fi, z)
 ADMM_Scaled_system3d.solve_ADMM()
 
+save_data_list += [postprocess_ADMM(ADMM_Scaled_system3d)]
 
 print('ADMM done')
 
@@ -720,33 +828,46 @@ bounds_surr = np.array([[0, 1]]*N_var)
 z = {i: x0_scaled[i-1] for i in global_ind}
 
 
-Coordinator_ADMM_system3d = Coordinator_ADMM(N, N_var, index_agents, global_ind)
-Coordinator_ADMM_system3d.initialize_Decomp(rho, N_it, list_fi, z)
-try:
-    output_Coord1_3d = Coordinator_ADMM_system3d.solve(CUATRO, x0_scaled, bounds_surr, init_trust, 
-                            budget = N_it, beta_red = beta)
-except:
-    output_Coord1_3d = {}
-    z_dummy = {i: [x0_scaled[i-1]] for i in global_ind}
-    y_dummy = float(np.sum([pyo.value(f(z_dummy, rho, global_ind, global_ind).obj) for f in list_fi]))
-    output_Coord1_3d['f_best_so_far'] = np.zeros(N_it) + y_dummy
-    output_Coord1_3d['samples_at_iteration'] = np.arange(1, N_it+1)
-    output_Coord1_3d['x_best_so_far'] = [x0_scaled]
+ADMM_CUATRO_list3d = []
+s = 'ADMM_CUATRO'
+for i in range(1):
+    Coordinator_ADMM_system3d = Coordinator_ADMM(N, N_var, index_agents, global_ind)
+    Coordinator_ADMM_system3d.initialize_Decomp(rho, N_it, list_fi, z)
+    try:
+        output_Coord1_3d = Coordinator_ADMM_system3d.solve(CUATRO, x0_scaled, bounds_surr, init_trust, 
+                            budget = N_it, beta_red = beta, rnd_seed=i)
+    except:
+        output_Coord1_3d = {}
+        z_dummy = {i: [x0_scaled[i-1]] for i in global_ind}
+        y_dummy = float(np.sum([pyo.value(f(z_dummy, rho, global_ind, global_ind).obj) for f in list_fi]))
+        output_Coord1_3d['f_best_so_far'] = np.zeros(N_it) + y_dummy
+        output_Coord1_3d['samples_at_iteration'] = np.arange(1, N_it+1)
+        output_Coord1_3d['x_best_so_far'] = [x0_scaled]
+    ADMM_CUATRO_list3d += [output_Coord1_3d]
+    print(s + ' run ' + str(i+1) + ': Done')
 print('Coord1 done')
 
+save_data_list += [ADMM_CUATRO_list3d]
 
 A_dict = construct_A(index_agents, global_ind, N)
-System_dataAL3d = ALADIN_Data(N, N_var, index_agents, global_ind)
-System_dataAL3d.initialize(rho, N_it, z, list_fi, A_dict)
-try:
-    System_dataAL3d.solve(6, init_trust, mu = 1e7, infeas_start = True)
-except:
-    print('Data-driven ALADIN failed')
-    for ag in range(N):
-        last_obj = System_dataAL3d.obj[ag+1][-1]
-        N_dummy = len(System_dataAL3d.obj[ag+1])
-        System_dataAL3d.obj[ag+1] += [last_obj]*(N_it-N_dummy)
+ALADIN_CUATRO_list3d = []
+s = 'ALADIN_CUATRO'
+for i in range(1):
+    System_dataAL3d = ALADIN_Data(N, N_var, index_agents, global_ind)
+    System_dataAL3d.initialize(rho, N_it, z, list_fi, A_dict, seed=i)
+    try:
+        System_dataAL3d.solve(6, init_trust, mu = 1e7, infeas_start = True)
+    except:
+        print('Data-driven ALADIN failed')
+        for ag in range(N):
+            last_obj = System_dataAL3d.obj[ag+1][-1]
+            N_dummy = len(System_dataAL3d.obj[ag+1])
+            System_dataAL3d.obj[ag+1] += [last_obj]*(N_it-N_dummy)
+    ALADIN_CUATRO_list3d += [System_dataAL3d]
+    print(s + ' run ' + str(i+1) + ': Done')
 print('Coord2 done')
+
+save_data_list += [ALADIN_CUATRO_list3d]
 
 def f_surr(x):
     z = {i: [x[i-1]] for i in global_ind}
@@ -759,15 +880,14 @@ FL_pybobyqa3d = PyBobyqaWrapper().solve(f_surr, x0_scaled, bounds=bounds_surr.T,
                                       objfun_has_noise=False)
 print('Py-BOBYQA done')    
 
+save_data_list += [FL_pybobyqa3d]
+
 def f_DIR(x, grad):
     z = {i: [x[i-1]] for i in global_ind}
     iterables = [rho, global_ind, global_ind]
     return np.sum([pyo.value(f(z, *iterables).obj) for f in list_fi]), [0]
 
-FL_DIRECT3d =  DIRECTWrapper().solve(f_DIR, x0_scaled, bounds_surr, \
-                                    maxfun = N_it, constraints=1)
 
-print('DIRECT done')
 
 def f_BO(x):
     if x.ndim > 1:
@@ -779,15 +899,49 @@ def f_BO(x):
     return np.sum([pyo.value(f(z, *iterables).obj) for f in list_fi])
     
 
-domain = [{'name': 'var_'+str(i+1), 'type': 'continuous', 'domain': (0,1)} for i in range(len(x0))]
+domain = [{'name': 'var_'+str(i+1), 'type': 'continuous', 'domain': (0,1)} for i in range(len(x0_scaled))]
 y0 = np.array([f_BO(x0_scaled)])
-for j in range(len(FL_DIRECT3d['f_best_so_far'])):
-    if FL_DIRECT3d['f_best_so_far'][j] > float(y0):
-        FL_DIRECT3d['f_best_so_far'][j] = float(y0)
 
-BO3d = BayesianOptimization(f=f_BO, domain=domain, X=x0_scaled.reshape((1,len(x0_scaled))), Y=y0.reshape((1,1)))
-BO3d.run_optimization(max_iter=N_it, eps=0)
-BO_post3d = preprocess_BO(BO3d.Y.flatten(), y0, N_eval=N_it)
+s = 'DIRECT'
+DIRECT_List3d = []
+for i in range(N_runs): 
+    FL_DIRECT3d =  DIRECTWrapper().solve(f_DIR, x0_scaled, bounds_surr, \
+                                    maxfun = N_it, constraints=1)
+    for j in range(len(FL_DIRECT3d['f_best_so_far'])):
+        if FL_DIRECT3d['f_best_so_far'][j] > float(y0):
+            FL_DIRECT3d['f_best_so_far'][j] = float(y0)
+    DIRECT_List3d += [FL_DIRECT3d]
+    print(s + ' run ' + str(i+1) + ': Done')
+
+print('DIRECT done')
+
+save_data_list += [DIRECT_List3d]
+
+s = 'BO'
+BO_List3d = []
+for i in range(N_runs):
+    BO3d = BayesianOptimization(f=f_BO, domain=domain, X=x0_scaled.reshape((1,len(x0_scaled))), Y=y0.reshape((1,1)))
+    BO3d.run_optimization(max_iter=N_it, eps=0)
+    BO_post3d = preprocess_BO(BO3d.Y.flatten(), y0, N_eval=N_it)
+    BO_List3d += [BO_post3d]
+    print(s + ' run ' + str(i+1) + ': Done')
+
+save_data_list += [BO_List3d]
+
+s_list = ['ADMM', 'ADMM_CUATRO', 'ALADIN_CUATRO', 'Py-BOBYQA', 
+          'DIRECT-L', 'GPyOpt']
+dim = len(x0)
+problem = 'Facility_Location_'
+
+for k in range(len(s_list)):
+    with open('../Data/'+ problem + str(N) + 'ag_' + str(dim) +'dim_'+ s_list[k] + '.pickle', 'wb') as handle:
+        pickle.dump(save_data_list[k], handle, protocol=pickle.HIGHEST_PROTOCOL) 
+
+
+data_dict = {}
+for k in range(len(s_list)):
+    with open('../Data/'+ problem + str(N) + 'ag_' + str(dim) +'dim_'+ s_list[k] + '.pickle', 'rb') as handle:
+        data_dict[s_list[k]] = pickle.load(handle)
 
 fig1 = plt.figure() 
 ax1 = fig1.add_subplot()  
@@ -795,28 +949,28 @@ fig2 = plt.figure()
 ax2 = fig2.add_subplot()  
 # ax2, fig2 = trust_fig(X, Y, Z, g)  
 
-s = 'ADMM_Scaled'
-out = postprocessing_2d(ax1, ax2,  s, ADMM_Scaled_system3d, pyo.value(res.obj), c='dodgerblue')
+s = 'ADMM'
+out = postprocessing_2d(ax1, ax2,  s, data_dict[s], pyo.value(res.obj), c='dodgerblue', N=N)
 ax1, ax2 = out
 
-s = 'CUATRO_1'
-out = postprocessing_2d(ax1, ax2, s, output_Coord1_3d, pyo.value(res.obj), coord_input = True, c='darkorange')
+s = 'ADMM_CUATRO'
+out = postprocessing_List(ax1, ax2, s, data_dict[s], pyo.value(res.obj), coord_input = True, c='darkorange', N_it=N_it)
 ax1, ax2 = out
 
 s = 'Py-BOBYQA'
-out = postprocessing_2d(ax1, ax2, s, FL_pybobyqa3d, pyo.value(res.obj), coord_input = True, c='green')
+out = postprocessing_2d(ax1, ax2, s, data_dict[s], pyo.value(res.obj), coord_input = True, c='green')
 ax1, ax2 = out
 
 s = 'DIRECT-L'
-out = postprocessing_2d(ax1, ax2, s, FL_DIRECT3d, pyo.value(res.obj), coord_input = True, c='red')
+out = postprocessing_List(ax1, ax2, s, data_dict[s], pyo.value(res.obj), coord_input = True, c='red', N_it=N_it)
 ax1, ax2 = out
 
-s = 'CUATRO_2'
-out = postprocessing_2d(ax1, ax2, s, System_dataAL3d, pyo.value(res.obj), ALADIN = True, c='darkviolet')
+s = 'ALADIN_CUATRO'
+out = postprocessing_List(ax1, ax2, s, data_dict[s], pyo.value(res.obj), ALADIN = True, c='darkviolet', N_it=N_it, N=N)
 ax1, ax2 = out
 
-s = 'BO'
-out = postprocessing_2d(ax1, ax2, s, BO_post3d, pyo.value(res.obj), BO = True, c='saddlebrown')
+s = 'GPyOpt'
+out = postprocessing_List(ax1, ax2, s, data_dict[s], pyo.value(res.obj), BO = True, c='saddlebrown', N_it=N_it)
 ax1, ax2 = out
 
 N_it_temp = N_it
@@ -844,54 +998,54 @@ fig1.savefig('../Figures/' + problem + str(N) + 'ag_' + str(dim) + 'dim_conv.svg
 fig2.savefig('../Figures/' + problem + str(N) + 'ag_' + str(dim) + 'dim_evals.svg', format = "svg")
 
 
-pos_x = np.array([pyo.value(res.x[1])])
-pos_y = np.array([pyo.value(res.x[2])])
+# pos_x = np.array([pyo.value(res.x[1])])
+# pos_y = np.array([pyo.value(res.x[2])])
 
-fig1 = plt.figure() 
-ax1 = fig1.add_subplot() 
-s = 'Centralized' ; c = 'k'
-ax1.scatter(pos_x, pos_y, marker='*', c = c,label=s)
+# fig1 = plt.figure() 
+# ax1 = fig1.add_subplot() 
+# s = 'Centralized' ; c = 'k'
+# ax1.scatter(pos_x, pos_y, marker='*', c = c,label=s)
 
-x_all = output_Coord1_3d['x_best_so_far'][-1][:2]*(np.array([bounds[i][1] - bounds[i][0] for i in range(2)]))
-s = 'CUATRO1' ; c = 'darkorange'
-x = x_all[:1] ; y = x_all[1:]
-ax1.scatter(x, y, c = c, label=s)
+# x_all = output_Coord1_3d['x_best_so_far'][-1][:2]*(np.array([bounds[i][1] - bounds[i][0] for i in range(2)]))
+# s = 'CUATRO1' ; c = 'darkorange'
+# x = x_all[:1] ; y = x_all[1:]
+# ax1.scatter(x, y, c = c, label=s)
 
-x_all = FL_pybobyqa3d['x_best_so_far'][-1][:2]*(np.array([bounds[i][1] - bounds[i][0] for i in range(2)]))
-s = 'Py-BOBYQA' ; c = 'green'
-x = x_all[:1] ; y = x_all[1:]
-ax1.scatter(x, y, c = c, label=s)
+# x_all = FL_pybobyqa3d['x_best_so_far'][-1][:2]*(np.array([bounds[i][1] - bounds[i][0] for i in range(2)]))
+# s = 'Py-BOBYQA' ; c = 'green'
+# x = x_all[:1] ; y = x_all[1:]
+# ax1.scatter(x, y, c = c, label=s)
 
-x_all = FL_DIRECT3d['x_best_so_far'][-1][:2]*(np.array([bounds[i][1] - bounds[i][0] for i in range(2)]))
-s = 'DIRECT' ; c = 'red'
-x = x_all[:1] ; y = x_all[1:]
-ax1.scatter(x, y, c = c, label=s)
+# x_all = FL_DIRECT3d['x_best_so_far'][-1][:2]*(np.array([bounds[i][1] - bounds[i][0] for i in range(2)]))
+# s = 'DIRECT' ; c = 'red'
+# x = x_all[:1] ; y = x_all[1:]
+# ax1.scatter(x, y, c = c, label=s)
 
-s = 'CUATRO2' ; c = 'darkviolet'
-x = np.array([System_dataAL3d.z_list[1][1][-1]])*np.array([bounds[0][1] - bounds[0][0]])
-y = np.array([System_dataAL3d.z_list[1][2][-1]])*np.array([bounds[1][1] - bounds[1][0]])
-ax1.scatter(x, y, c = c, label=s)
+# s = 'CUATRO2' ; c = 'darkviolet'
+# x = np.array([System_dataAL3d.z_list[1][1][-1]])*np.array([bounds[0][1] - bounds[0][0]])
+# y = np.array([System_dataAL3d.z_list[1][2][-1]])*np.array([bounds[1][1] - bounds[1][0]])
+# ax1.scatter(x, y, c = c, label=s)
 
-s = 'ADMM' ; c = 'dodgerblue'
-x = np.array([ADMM_Scaled_system3d.z_list[1][-1]])
-y = np.array([ADMM_Scaled_system3d.z_list[2][-1]])
-ax1.scatter(x, y, c = c, label=s)
+# s = 'ADMM' ; c = 'dodgerblue'
+# x = np.array([ADMM_Scaled_system3d.z_list[1][-1]])
+# y = np.array([ADMM_Scaled_system3d.z_list[2][-1]])
+# ax1.scatter(x, y, c = c, label=s)
 
-s = 'BO' ; c = 'saddlebrown'
-x_best = BO3d.X[np.argmin(BO3d.Y)]
-ax1.scatter(x_best[0], x_best[1], c = c, label=s)
+# s = 'BO' ; c = 'saddlebrown'
+# x_best = BO3d.X[np.argmin(BO3d.Y)]
+# ax1.scatter(x_best[0], x_best[1], c = c, label=s)
 
-supplier_x = [data[None]['x_i'][k] for k in range(1, 3)]
-supplier_y = [data[None]['z_i'][k] for k in range(1, 3)]
-demand_x = [data[None]['x_j'][k] for k in range(1, 3)]
-demand_y = [data[None]['z_j'][k] for k in range(1, 3)]
+# supplier_x = [data[None]['x_i'][k] for k in range(1, 3)]
+# supplier_y = [data[None]['z_i'][k] for k in range(1, 3)]
+# demand_x = [data[None]['x_j'][k] for k in range(1, 3)]
+# demand_y = [data[None]['z_j'][k] for k in range(1, 3)]
 
-plt.scatter(np.array(supplier_x), np.array(supplier_y), marker ='s', c = 'k', label = 'supply')
-plt.scatter(np.array(demand_x), np.array(demand_y), marker='D', c = 'k', label = 'demand')
-plt.legend()
+# plt.scatter(np.array(supplier_x), np.array(supplier_y), marker ='s', c = 'k', label = 'supply')
+# plt.scatter(np.array(demand_x), np.array(demand_y), marker='D', c = 'k', label = 'demand')
+# plt.legend()
 
-problem = 'Facility_Location_'
-fig1.savefig('../Figures/' + problem + str(N) + 'ag_' + str(dim) + 'dim_Vis.svg', format = "svg")
+# problem = 'Facility_Location_'
+# fig1.savefig('../Figures/' + problem + str(N) + 'ag_' + str(dim) + 'dim_Vis.svg', format = "svg")
 
 
 np.random.seed(2)
@@ -970,6 +1124,8 @@ global_ind = list(np.arange(N_var)+1)
 #         print('x'+str(i), pyo.value(res2.x[i]), 'z'+str(i), pyo.value(res2.z[i]))
 #     result += pyo.value(res1.obj) + pyo.value(res2.obj) 
 
+save_data_list = []
+
 x0 = np.array([1.25, 2.5] + [3.75, 2.5] + \
               [50, 50]) 
 z = {i: x0[i-1] for i in global_ind}
@@ -987,6 +1143,7 @@ ADMM_Scaled_system6d = ADMM_Scaled(N, N_var, index_agents, global_ind)
 ADMM_Scaled_system6d.initialize_ADMM(rho, N_it, list_fi, z)
 ADMM_Scaled_system6d.solve_ADMM()
 
+save_data_list = [postprocess_ADMM(ADMM_Scaled_system6d)]
 
 print('ADMM done')
 
@@ -1007,33 +1164,48 @@ bounds_surr = np.array([[0, 1]]*N_var)
 
 z = {i: x0_scaled[i-1] for i in global_ind}
 
-Coordinator_ADMM_system6d = Coordinator_ADMM(N, N_var, index_agents, global_ind)
-Coordinator_ADMM_system6d.initialize_Decomp(rho, N_it, list_fi, z)
-try:
-    output_Coord1_6d = Coordinator_ADMM_system5d.solve(CUATRO, x0_scaled, bounds_surr, init_trust, 
-                            budget = N_it, beta_red = beta)
-except:
-    output_Coord1_6d = {}
-    z_dummy = {i: [x0_scaled[i-1]] for i in global_ind}
-    y_dummy = float(np.sum([pyo.value(f(z_dummy, rho, global_ind, global_ind).obj) for f in list_fi]))
-    output_Coord1_6d['f_best_so_far'] = np.zeros(N_it) + y_dummy
-    output_Coord1_6d['samples_at_iteration'] = np.arange(1, N_it+1)
-    output_Coord1_6d['x_best_so_far'] = [x0_scaled]
+
+ADMM_CUATRO_list6d = []
+s = 'ADMM_CUATRO'
+for i in range(1):
+    Coordinator_ADMM_system6d = Coordinator_ADMM(N, N_var, index_agents, global_ind)
+    Coordinator_ADMM_system6d.initialize_Decomp(rho, N_it, list_fi, z)
+    try:
+        output_Coord1_6d = Coordinator_ADMM_system6d.solve(CUATRO, x0_scaled, bounds_surr, init_trust, 
+                            budget = N_it, beta_red = beta, rnd_seed=i)
+    except:
+        output_Coord1_6d = {}
+        z_dummy = {i: [x0_scaled[i-1]] for i in global_ind}
+        y_dummy = float(np.sum([pyo.value(f(z_dummy, rho, global_ind, global_ind).obj) for f in list_fi]))
+        output_Coord1_6d['f_best_so_far'] = np.zeros(N_it) + y_dummy
+        output_Coord1_6d['samples_at_iteration'] = np.arange(1, N_it+1)
+        output_Coord1_6d['x_best_so_far'] = [x0_scaled]
+    ADMM_CUATRO_list6d += [output_Coord1_6d]
+    print(s + ' run ' + str(i+1) + ': Done')
 print('Coord1 done')
 
+save_data_list += [ADMM_CUATRO_list6d]
 
 A_dict = construct_A(index_agents, global_ind, N)
-System_dataAL6d = ALADIN_Data(N, N_var, index_agents, global_ind)
-System_dataAL6d.initialize(rho, N_it, z, list_fi, A_dict)
-try:
-    System_dataAL6d.solve(6, init_trust, mu = 1e7, infeas_start = True)
-except:
-    print('Data-driven ALADIN failed')
-    for ag in range(N):
-        last_obj = System_dataAL6d.obj[ag+1][-1]
-        N_dummy = len(System_dataAL6d.obj[ag+1])
-        System_dataAL6d.obj[ag+1] += [last_obj]*(N_it-N_dummy)
+ALADIN_CUATRO_list6d = []
+s = 'ALADIN_CUATRO'
+for i in range(1):
+    System_dataAL6d = ALADIN_Data(N, N_var, index_agents, global_ind)
+    System_dataAL6d.initialize(rho, N_it, z, list_fi, A_dict, seed=i)
+    try:
+        System_dataAL6d.solve(6, init_trust, mu = 1e7, infeas_start = True)
+    except:
+        print('Data-driven ALADIN failed')
+        for ag in range(N):
+            last_obj = System_dataAL6d.obj[ag+1][-1]
+            N_dummy = len(System_dataAL6d.obj[ag+1])
+            System_dataAL6d.obj[ag+1] += [last_obj]*(N_it-N_dummy)
+    ALADIN_CUATRO_list6d += [System_dataAL6d]
+    print(s + ' run ' + str(i+1) + ': Done')
 print('Coord2 done')
+
+# save_data_list[2] = ALADIN_CUATRO_list6d
+save_data_list += [ALADIN_CUATRO_list6d]
 
 def f_surr(x):
     z = {i: [x[i-1]] for i in global_ind}
@@ -1046,15 +1218,14 @@ FL_pybobyqa6d = PyBobyqaWrapper().solve(f_surr, x0_scaled, bounds=bounds_surr.T,
                                       objfun_has_noise=False)
 print('Py-BOBYQA done')    
 
+save_data_list += [FL_pybobyqa6d]
+
 def f_DIR(x, grad):
     z = {i: [x[i-1]] for i in global_ind}
     iterables = [rho, global_ind, global_ind]
     return np.sum([pyo.value(f(z, *iterables).obj) for f in list_fi]), [0]
 
-FL_DIRECT6d =  DIRECTWrapper().solve(f_DIR, x0_scaled, bounds_surr, \
-                                    maxfun = N_it, constraints=1)
 
-print('DIRECT done')
 
 def f_BO(x):
     if x.ndim > 1:
@@ -1066,16 +1237,49 @@ def f_BO(x):
     return np.sum([pyo.value(f(z, *iterables).obj) for f in list_fi])
     
 
-domain = [{'name': 'var_'+str(i+1), 'type': 'continuous', 'domain': (0,1)} for i in range(len(x0))]
+domain = [{'name': 'var_'+str(i+1), 'type': 'continuous', 'domain': (0,1)} for i in range(len(x0_scaled))]
 y0 = np.array([f_BO(x0_scaled)])
-for j in range(len(FL_DIRECT6d['f_best_so_far'])):
-    if FL_DIRECT6d['f_best_so_far'][j] > float(y0):
-        FL_DIRECT6d['f_best_so_far'][j] = float(y0)
+
+s = 'DIRECT'
+DIRECT_List6d = []
+for i in range(N_runs): 
+    FL_DIRECT6d =  DIRECTWrapper().solve(f_DIR, x0_scaled, bounds_surr, \
+                                    maxfun = N_it, constraints=1)
+    for j in range(len(FL_DIRECT6d['f_best_so_far'])):
+        if FL_DIRECT6d['f_best_so_far'][j] > float(y0):
+            FL_DIRECT6d['f_best_so_far'][j] = float(y0)
+    DIRECT_List6d += [FL_DIRECT6d]
+    print(s + ' run ' + str(i+1) + ': Done')
+
+print('DIRECT done')
+
+save_data_list += [DIRECT_List6d]
+
+s = 'BO'
+BO_List6d = []
+for i in range(N_runs):
+    BO6d = BayesianOptimization(f=f_BO, domain=domain, X=x0_scaled.reshape((1,len(x0_scaled))), Y=y0.reshape((1,1)))
+    BO6d.run_optimization(max_iter=N_it, eps=0)
+    BO_post6d = preprocess_BO(BO6d.Y.flatten(), y0, N_eval=N_it)
+    BO_List6d += [BO_post6d]
+    print(s + ' run ' + str(i+1) + ': Done')
+
+save_data_list += [BO_List6d]
+
+s_list = ['ADMM', 'ADMM_CUATRO', 'ALADIN_CUATRO', 'Py-BOBYQA', 
+          'DIRECT-L', 'GPyOpt']
+dim = len(x0)
+problem = 'Facility_Location_'
+
+for k in range(len(s_list)):
+    with open('../Data/'+ problem + str(N) + 'ag_' + str(dim) +'dim_'+ s_list[k] + '.pickle', 'wb') as handle:
+        pickle.dump(save_data_list[k], handle, protocol=pickle.HIGHEST_PROTOCOL) 
 
 
-BO6d = BayesianOptimization(f=f_BO, domain=domain, X=x0_scaled.reshape((1,len(x0_scaled))), Y=y0.reshape((1,1)))
-BO6d.run_optimization(max_iter=N_it, eps=0)
-BO_post6d = preprocess_BO(BO6d.Y.flatten(), y0, N_eval=N_it)
+data_dict = {}
+for k in range(len(s_list)):
+    with open('../Data/'+ problem + str(N) + 'ag_' + str(dim) +'dim_'+ s_list[k] + '.pickle', 'rb') as handle:
+        data_dict[s_list[k]] = pickle.load(handle)
 
 fig1 = plt.figure() 
 ax1 = fig1.add_subplot()  
@@ -1083,28 +1287,28 @@ fig2 = plt.figure()
 ax2 = fig2.add_subplot()  
 # ax2, fig2 = trust_fig(X, Y, Z, g)  
 
-s = 'ADMM_Scaled'
-out = postprocessing_2d(ax1, ax2,  s, ADMM_Scaled_system6d, pyo.value(res.obj), c='dodgerblue')
+s = 'ADMM'
+out = postprocessing_2d(ax1, ax2,  s, data_dict[s], pyo.value(res.obj), c='dodgerblue', N=N)
 ax1, ax2 = out
 
-s = 'CUATRO_1'
-out = postprocessing_2d(ax1, ax2, s, output_Coord1_6d, pyo.value(res.obj), coord_input = True, c='darkorange')
+s = 'ADMM_CUATRO'
+out = postprocessing_List(ax1, ax2, s, data_dict[s], pyo.value(res.obj), coord_input = True, c='darkorange', N_it=N_it)
 ax1, ax2 = out
 
 s = 'Py-BOBYQA'
-out = postprocessing_2d(ax1, ax2, s, FL_pybobyqa6d, pyo.value(res.obj), coord_input = True, c='green')
+out = postprocessing_2d(ax1, ax2, s, data_dict[s], pyo.value(res.obj), coord_input = True, c='green')
 ax1, ax2 = out
 
 s = 'DIRECT-L'
-out = postprocessing_2d(ax1, ax2, s, FL_DIRECT6d, pyo.value(res.obj), coord_input = True, c='red')
+out = postprocessing_List(ax1, ax2, s, data_dict[s], pyo.value(res.obj), coord_input = True, c='red', N_it=N_it)
 ax1, ax2 = out
 
-s = 'CUATRO_2'
-out = postprocessing_2d(ax1, ax2, s, System_dataAL6d, pyo.value(res.obj), ALADIN = True, c='darkviolet')
+s = 'ALADIN_CUATRO'
+out = postprocessing_List(ax1, ax2, s, data_dict[s], pyo.value(res.obj), ALADIN = True, c='darkviolet', N_it=N_it, N=N)
 ax1, ax2 = out
 
-s = 'BO'
-out = postprocessing_2d(ax1, ax2, s, BO_post6d, pyo.value(res.obj), BO = True, c='saddlebrown')
+s = 'GPyOpt'
+out = postprocessing_List(ax1, ax2, s, data_dict[s], pyo.value(res.obj), BO = True, c='saddlebrown', N_it=N_it)
 ax1, ax2 = out
 
 N_it_temp = N_it
@@ -1133,56 +1337,56 @@ fig2.savefig('../Figures/' + problem + str(N) + 'ag_' + str(dim) + 'dim_evals.sv
 
 
 
-pos_x = np.array([pyo.value(res.x[1]), pyo.value(res.x[2])])
-pos_y = np.array([pyo.value(res.x[3]), pyo.value(res.x[4])])
+# pos_x = np.array([pyo.value(res.x[1]), pyo.value(res.x[2])])
+# pos_y = np.array([pyo.value(res.x[3]), pyo.value(res.x[4])])
 
-fig1 = plt.figure() 
-ax1 = fig1.add_subplot() 
-s = 'Centralized' ; c = 'k'
-ax1.scatter(pos_x, pos_y, marker='*', c = c, label=s)
+# fig1 = plt.figure() 
+# ax1 = fig1.add_subplot() 
+# s = 'Centralized' ; c = 'k'
+# ax1.scatter(pos_x, pos_y, marker='*', c = c, label=s)
 
-x_all = output_Coord1_6d['x_best_so_far'][-1][:4]*(np.array([bounds[i][1] - bounds[i][0] for i in range(4)]))
-s = 'CUATRO1' ; c = 'darkorange'
-x = x_all[:2] ; y = x_all[2:]
-ax1.scatter(x, y, c = c, label=s)
+# x_all = output_Coord1_6d['x_best_so_far'][-1][:4]*(np.array([bounds[i][1] - bounds[i][0] for i in range(4)]))
+# s = 'CUATRO1' ; c = 'darkorange'
+# x = x_all[:2] ; y = x_all[2:]
+# ax1.scatter(x, y, c = c, label=s)
 
-x_all = FL_pybobyqa6d['x_best_so_far'][-1][:4]*(np.array([bounds[i][1] - bounds[i][0] for i in range(4)]))
-s = 'Py-BOBYQA' ; c = 'green'
-x = x_all[:2] ; y = x_all[2:]
-ax1.scatter(x, y, c = c, label=s)
+# x_all = FL_pybobyqa6d['x_best_so_far'][-1][:4]*(np.array([bounds[i][1] - bounds[i][0] for i in range(4)]))
+# s = 'Py-BOBYQA' ; c = 'green'
+# x = x_all[:2] ; y = x_all[2:]
+# ax1.scatter(x, y, c = c, label=s)
 
-x_all = FL_DIRECT6d['x_best_so_far'][-1][:4]*(np.array([bounds[i][1] - bounds[i][0] for i in range(4)]))
-s = 'DIRECT' ; c = 'red'
-x = x_all[:2] ; y = x_all[2:]
-ax1.scatter(x, y, c = c, label=s)
+# x_all = FL_DIRECT6d['x_best_so_far'][-1][:4]*(np.array([bounds[i][1] - bounds[i][0] for i in range(4)]))
+# s = 'DIRECT' ; c = 'red'
+# x = x_all[:2] ; y = x_all[2:]
+# ax1.scatter(x, y, c = c, label=s)
 
-s = 'CUATRO2' ; c = 'darkviolet'
-x_all = np.array([System_dataAL6d.z_list[1][i][-1]*(bounds[i-1][1] - bounds[i-1][0]) for i in global_ind])
-x = x_all[:2] ; y = x_all[2:4]
-ax1.scatter(x, y, c = c, label=s)
+# s = 'CUATRO2' ; c = 'darkviolet'
+# x_all = np.array([System_dataAL6d.z_list[1][i][-1]*(bounds[i-1][1] - bounds[i-1][0]) for i in global_ind])
+# x = x_all[:2] ; y = x_all[2:4]
+# ax1.scatter(x, y, c = c, label=s)
 
-s = 'ADMM' ; c = 'dodgerblue'
-x = np.array([ADMM_Scaled_system6d.z_list[1][-1], ADMM_Scaled_system6d.z_list[2][-1]])
-y = np.array([ADMM_Scaled_system6d.z_list[3][-1], ADMM_Scaled_system6d.z_list[4][-1]])
-ax1.scatter(x, y, c = c, label=s)
+# s = 'ADMM' ; c = 'dodgerblue'
+# x = np.array([ADMM_Scaled_system6d.z_list[1][-1], ADMM_Scaled_system6d.z_list[2][-1]])
+# y = np.array([ADMM_Scaled_system6d.z_list[3][-1], ADMM_Scaled_system6d.z_list[4][-1]])
+# ax1.scatter(x, y, c = c, label=s)
 
-s = 'BO' ; c = 'saddlebrown'
-x_all = BO6d.X[np.argmin(BO6d.Y)]
-x = x_all[:2] ; y = x_all[2:4]
-ax1.scatter(x, y, c = c, label=s)
+# s = 'BO' ; c = 'saddlebrown'
+# x_all = BO6d.X[np.argmin(BO6d.Y)]
+# x = x_all[:2] ; y = x_all[2:4]
+# ax1.scatter(x, y, c = c, label=s)
 
-supplier_x = [data[None]['x_i'][k] for k in range(1, 3)]
-supplier_y = [data[None]['z_i'][k] for k in range(1, 3)]
-demand_x = [data[None]['x_j'][k] for k in range(1, 3)]
-demand_y = [data[None]['z_j'][k] for k in range(1, 3)]
+# supplier_x = [data[None]['x_i'][k] for k in range(1, 3)]
+# supplier_y = [data[None]['z_i'][k] for k in range(1, 3)]
+# demand_x = [data[None]['x_j'][k] for k in range(1, 3)]
+# demand_y = [data[None]['z_j'][k] for k in range(1, 3)]
 
-plt.scatter(np.array(supplier_x), np.array(supplier_y), marker ='s', c = 'k', label = 'supply')
-plt.scatter(np.array(demand_x), np.array(demand_y), marker='D', c = 'k', label = 'demand')
-plt.legend()
+# plt.scatter(np.array(supplier_x), np.array(supplier_y), marker ='s', c = 'k', label = 'supply')
+# plt.scatter(np.array(demand_x), np.array(demand_y), marker='D', c = 'k', label = 'demand')
+# plt.legend()
 
 
-problem = 'Facility_Location_'
-fig1.savefig('../Figures/' + problem + str(N) + 'ag_' + str(dim) + 'dim_Vis.svg', format = "svg")
+# problem = 'Facility_Location_'
+# fig1.savefig('../Figures/' + problem + str(N) + 'ag_' + str(dim) + 'dim_Vis.svg', format = "svg")
 
 
 

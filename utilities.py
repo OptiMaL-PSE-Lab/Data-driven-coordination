@@ -175,15 +175,17 @@ def postprocessing_List(ax1, ax2, string, List, actual_f, coord_input = False, A
     x_axis = np.arange(1, 1+N_it)
     eval_median, eval_min, eval_max = average_from_list(eval_array)
     conv_median, conv_min, conv_max = average_from_list(conv_array)
-    ax1.step(x_axis, conv_median, where = 'post', label = string, c=c)
+    ax1.step(x_axis, conv_median, where = 'post', label = string, c=c, linestyle='--')
     ax1.fill_between(x_axis, conv_min, conv_max, alpha = .5, step = 'post', color=c)
-    ax2.step(x_axis, eval_median, where = 'post', label = string, c=c)
+    ax2.step(x_axis, eval_median, where = 'post', label = string, c=c, linestyle='--')
     ax2.fill_between(x_axis, eval_min, eval_max, alpha = .5, step = 'post', color=c)
-
             
     return ax1, ax2
 
+class dummy_dict:
+        def __init__(self, input_dict):
+            self.obj = input_dict.obj
 
-
-
+def postprocess_ADMM(input_dict):
+    return dummy_dict(input_dict)
 

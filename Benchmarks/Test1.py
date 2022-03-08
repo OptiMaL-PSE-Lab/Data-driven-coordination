@@ -19,15 +19,16 @@ from GPyOpt.methods import BayesianOptimization
 import numpy as np
 import matplotlib.pyplot as plt
 import pyomo.environ as pyo
+import pickle
 
-from utilities import postprocessing, postprocessing_List, preprocess_BO
+from utilities import postprocessing, postprocessing_List, preprocess_BO, postprocess_ADMM
 
 
 N_it = 50
 
 N = 2
 N_var = 3
-N_runs = 10
+N_runs = 5
 list_fi = [f1, f2]
 
 global_ind = [3]
@@ -38,11 +39,16 @@ z = {3: 4.5}
 actual_f = 13.864179350870021
 actual_x = 0.398
 
+save_data_list = []
+
 rho = 5000 # just done 500, now do 5000
 
 ADMM_Scaled_system = ADMM_Scaled(N, N_var, index_agents, global_ind)
 ADMM_Scaled_system.initialize_ADMM(rho/10, N_it, list_fi, z)
 ADMM_Scaled_system.solve_ADMM()
+objct = postprocess_ADMM(ADMM_Scaled_system)
+save_data_list += [postprocess_ADMM(ADMM_Scaled_system)]
+
 
 s = 'ADMM_Scaled'
 print(s+': ', 'Done')
@@ -57,24 +63,28 @@ beta = 0.5
 
 CUATRO1_List = []
 s = 'Coordinator'
-for i in range(N_runs):
+for i in range(1):
     Coordinator_withConstr_system = Coordinator_withConstr(N, N_var, index_agents, global_ind)
     Coordinator_withConstr_system.initialize_Decomp(rho, N_it, list_fi, z)
     output_Coord = Coordinator_withConstr_system.solve(CUATRO, x0, bounds, init_trust, 
                             budget = N_it, beta_red = beta, rnd_seed=i)    
     CUATRO1_List += [output_Coord]
     print(s + ' run ' + str(i+1) + ': Done')
+    
+save_data_list += [CUATRO1_List]
 
 
 A_dict = {1: np.array([[1]]), 2: np.array([[-1]])}
 s = 'ALADIN_Data'
 CUATRO2_List = []
-for i in range(N_runs):
+for i in range(1):
     System_dataAL = ALADIN_Data(N, N_var, index_agents, global_ind)
     System_dataAL.initialize(rho, N_it, z, list_fi, A_dict, seed=i)
     System_dataAL.solve(6, init_trust, mu = 1e7)
     CUATRO2_List += [System_dataAL]
     print(s + ' run ' + str(i+1) + ': Done')
+
+save_data_list += [CUATRO2_List]
 
 def f_pbqa(x):
     z_list = {global_ind[i]: [x[i]] for i in range(dim)}
@@ -94,10 +104,14 @@ pybobyqa = PyBobyqaWrapper().solve(f_pbqa, x0, bounds=bounds.T, \
                                       maxfun=N_it, constraints=1, \
                                       seek_global_minimum= True, \
                                       objfun_has_noise=False)
+    
+save_data_list += [pybobyqa]
 
 domain = [{'name': 'var_'+str(i+1), 'type': 'continuous', 'domain': (-10,10)} for i in range(dim)]
 y0 = np.array([f_BO(x0)])
-   
+
+
+
 s = 'DIRECT'
 DIRECT_List = []
 for i in range(N_runs): 
@@ -106,6 +120,8 @@ for i in range(N_runs):
     DIRECT['f_best_so_far'][0] = float(y0)
     DIRECT_List += [DIRECT]
     print(s + ' run ' + str(i+1) + ': Done')
+
+save_data_list += [DIRECT_List]
 
 s = 'BO'
 BO_List = []
@@ -116,35 +132,55 @@ for i in range(N_runs):
     BO_List += [BO_post]
     print(s + ' run ' + str(i+1) + ': Done')
 
+save_data_list += [BO_List]
+
+s_list = ['ADMM', 'ADMM_CUATRO', 'ALADIN_CUATRO', 'Py-BOBYQA', 
+          'DIRECT-L', 'GPyOpt']
+
+dim = len(x0)
+problem = 'MotivatingExample_'
+
+
+for k in range(len(s_list)):
+    with open('../Data/'+ problem + str(N) + 'ag_' + str(dim) +'dim_'+ s_list[k] + '.pickle', 'wb') as handle:
+        pickle.dump(save_data_list[k], handle, protocol=pickle.HIGHEST_PROTOCOL) 
+
+
+data_dict = {}
+for k in range(len(s_list)):
+    with open('../Data/'+ problem + str(N) + 'ag_' + str(dim) +'dim_'+ s_list[k] + '.pickle', 'rb') as handle:
+        data_dict[s_list[k]] = pickle.load(handle)
+
 
 fig1 = plt.figure() 
 ax1 = fig1.add_subplot() 
 fig2 = plt.figure() 
 ax2 = fig2.add_subplot() 
 
-s = 'ADMM_Scaled'
-out = postprocessing(ax1, ax2,  s, ADMM_Scaled_system, actual_f, c='dodgerblue')
+s = 'ADMM'
+out = postprocessing(ax1, ax2,  s, data_dict[s], actual_f, c='dodgerblue')
 ax1, ax2 = out
 
-s = 'CUATRO_1'
-out = postprocessing_List(ax1, ax2, s, CUATRO1_List, actual_f, coord_input = True, c='darkorange')
+s = 'ADMM_CUATRO'
+out = postprocessing_List(ax1, ax2, s, data_dict[s], actual_f, coord_input = True, c='darkorange', N_it=N_it)
 ax1, ax2 = out
 
 s = 'Py-BOBYQA'
-out = postprocessing(ax1, ax2, s, pybobyqa, actual_f, coord_input = True, c='green')
+out = postprocessing(ax1, ax2, s, data_dict[s], actual_f, coord_input = True, c='green')
 ax1, ax2 = out
 
 s = 'DIRECT-L'
-out = postprocessing_List(ax1, ax2, s, DIRECT_List, actual_f, coord_input = True, c='red')
+out = postprocessing_List(ax1, ax2, s, data_dict[s], actual_f, coord_input = True, c='red', N_it=N_it)
 ax1, ax2 = out
 
-s = 'CUATRO_2'
-out = postprocessing_List(ax1, ax2, s, CUATRO2_List, actual_f, ALADIN = True, init=float(y0), c='darkviolet')
+s = 'ALADIN_CUATRO'
+out = postprocessing_List(ax1, ax2, s, data_dict[s], actual_f, ALADIN = True, c='darkviolet', N_it=N_it, N=N)
 ax1, ax2 = out
 
-s = 'BO'
-out = postprocessing_List(ax1, ax2, s, BO_List, actual_f, BO = True, c='saddlebrown')
+s = 'GPyOpt'
+out = postprocessing_List(ax1, ax2, s, data_dict[s], actual_f, BO = True, c='saddlebrown', N_it=N_it)
 ax1, ax2 = out
+
 
 # ax1.scatter
 # ax2.plot(np.array([1, 51]), np.array([actual_f, actual_f]), c = 'red', label = 'optimum')
