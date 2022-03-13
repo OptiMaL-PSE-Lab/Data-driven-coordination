@@ -100,7 +100,7 @@ index_agents = global_ind
 #         print('x'+str(i), pyo.value(res2.x[i]), 'z'+str(i), pyo.value(res2.z[i]))
 #     result += pyo.value(res1.obj) + pyo.value(res2.obj) 
 
-# save_data_list = []
+save_data_list = []
 
 x0 = np.array([2.5, 2.5] + \
               [100] + \
@@ -122,10 +122,12 @@ def f4(z_list, rho, global_ind, index, u_list = None, solver = False, seed=2):
 
 list_fi = [f1, f2, f3, f4]
 
-# ADMM_Scaled_system5d = ADMM_Scaled(N, N_var, index_agents, global_ind)
-# ADMM_Scaled_system5d.initialize_ADMM(rho, N_it, list_fi, z)
-# ADMM_Scaled_system5d.solve_ADMM()
-# save_data_list += [postprocess_ADMM(ADMM_Scaled_system5d)]
+ADMM_Scaled_system5d = ADMM_Scaled(N, N_var, index_agents, global_ind)
+ADMM_Scaled_system5d.initialize_ADMM(rho, N_it, list_fi, z)
+ADMM_Scaled_system5d.solve_ADMM()
+save_data_list += [postprocess_ADMM(ADMM_Scaled_system5d)]
+
+raise ValueError
 
 print('ADMM done')
 
@@ -151,58 +153,58 @@ bounds_surr = np.array([[0, 1]]*5)
 z = {i: x0_scaled[i-1] for i in global_ind}
 
 
-# ADMM_CUATRO_list5d = []
-# s = 'ADMM_CUATRO'
-# for i in range(1):
-#     Coordinator_ADMM_system5d = Coordinator_ADMM(N, N_var, index_agents, global_ind)
-#     Coordinator_ADMM_system5d.initialize_Decomp(rho, N_it, list_fi, z)
-#     try:
-#         output_Coord1_5d = Coordinator_ADMM_system5d.solve(CUATRO, x0_scaled, bounds_surr, init_trust, 
-#                             budget = N_it, beta_red = beta, rnd_seed=i)
-#     except:
-#         output_Coord1_5d = {}
-#         z_dummy = {i: [x0_scaled[i-1]] for i in global_ind}
-#         y_dummy = float(np.sum([pyo.value(f(z_dummy, rho, global_ind, global_ind).obj) for f in list_fi]))
-#         output_Coord1_5d['f_best_so_far'] = np.zeros(N_it) + y_dummy
-#         output_Coord1_5d['samples_at_iteration'] = np.arange(1, N_it+1)
-#         output_Coord1_5d['x_best_so_far'] = [x0_scaled]
-#     ADMM_CUATRO_list5d += [output_Coord1_5d]
-#     print(s + ' run ' + str(i+1) + ': Done')
-# print('Coord1 done')
-# save_data_list += [ADMM_CUATRO_list5d]
+ADMM_CUATRO_list5d = []
+s = 'ADMM_CUATRO'
+for i in range(1):
+    Coordinator_ADMM_system5d = Coordinator_ADMM(N, N_var, index_agents, global_ind)
+    Coordinator_ADMM_system5d.initialize_Decomp(rho, N_it, list_fi, z)
+    try:
+        output_Coord1_5d = Coordinator_ADMM_system5d.solve(CUATRO, x0_scaled, bounds_surr, init_trust, 
+                            budget = N_it, beta_red = beta, rnd_seed=i)
+    except:
+        output_Coord1_5d = {}
+        z_dummy = {i: [x0_scaled[i-1]] for i in global_ind}
+        y_dummy = float(np.sum([pyo.value(f(z_dummy, rho, global_ind, global_ind).obj) for f in list_fi]))
+        output_Coord1_5d['f_best_so_far'] = np.zeros(N_it) + y_dummy
+        output_Coord1_5d['samples_at_iteration'] = np.arange(1, N_it+1)
+        output_Coord1_5d['x_best_so_far'] = [x0_scaled]
+    ADMM_CUATRO_list5d += [output_Coord1_5d]
+    print(s + ' run ' + str(i+1) + ': Done')
+print('Coord1 done')
+save_data_list += [ADMM_CUATRO_list5d]
 
 
-# A_dict = construct_A(index_agents, global_ind, N)
-# ALADIN_CUATRO_list5d = []
-# s = 'ALADIN_CUATRO'
-# for i in range(1):
-#     System_dataAL5d = ALADIN_Data(N, N_var, index_agents, global_ind)
-#     System_dataAL5d.initialize(rho, N_it, z, list_fi, A_dict, seed=i)
-#     try:
-#         System_dataAL5d.solve(6, init_trust, mu = 1e7, infeas_start = True)
-#     except:
-#         print('Data-driven ALADIN failed')
-#         for ag in range(N):
-#             last_obj = System_dataAL5d.obj[ag+1][-1]
-#             N_dummy = len(System_dataAL5d.obj[ag+1])
-#             System_dataAL5d.obj[ag+1] += [last_obj]*(N_it-N_dummy)
-#     ALADIN_CUATRO_list5d += [System_dataAL5d]
-#     print(s + ' run ' + str(i+1) + ': Done')
-# print('Coord2 done')
-# save_data_list += [ALADIN_CUATRO_list5d]
+A_dict = construct_A(index_agents, global_ind, N)
+ALADIN_CUATRO_list5d = []
+s = 'ALADIN_CUATRO'
+for i in range(1):
+    System_dataAL5d = ALADIN_Data(N, N_var, index_agents, global_ind)
+    System_dataAL5d.initialize(rho, N_it, z, list_fi, A_dict, seed=i)
+    try:
+        System_dataAL5d.solve(6, init_trust, mu = 1e7, infeas_start = True)
+    except:
+        print('Data-driven ALADIN failed')
+        for ag in range(N):
+            last_obj = System_dataAL5d.obj[ag+1][-1]
+            N_dummy = len(System_dataAL5d.obj[ag+1])
+            System_dataAL5d.obj[ag+1] += [last_obj]*(N_it-N_dummy)
+    ALADIN_CUATRO_list5d += [System_dataAL5d]
+    print(s + ' run ' + str(i+1) + ': Done')
+print('Coord2 done')
+save_data_list += [ALADIN_CUATRO_list5d]
 
 def f_surr(x):
     z = {i: [x[i-1]] for i in global_ind}
     iterables = [rho, global_ind, global_ind]
     return np.sum([pyo.value(f(z, *iterables).obj) for f in list_fi]), [0]
 
-# FL_pybobyqa5d = PyBobyqaWrapper().solve(f_surr, x0_scaled, bounds=bounds_surr.T, \
-#                                       maxfun= N_it, constraints=1, \
-#                                       seek_global_minimum= True, \
-#                                       objfun_has_noise=False)
+FL_pybobyqa5d = PyBobyqaWrapper().solve(f_surr, x0_scaled, bounds=bounds_surr.T, \
+                                      maxfun= N_it, constraints=1, \
+                                      seek_global_minimum= True, \
+                                      objfun_has_noise=False)
 print('Py-BOBYQA done')    
 
-# save_data_list += [FL_pybobyqa5d]
+save_data_list += [FL_pybobyqa5d]
 
 def f_DIR(x, grad):
     z = {i: [x[i-1]] for i in global_ind}
@@ -222,30 +224,30 @@ def f_BO(x):
 domain = [{'name': 'var_'+str(i+1), 'type': 'continuous', 'domain': (0,1)} for i in range(len(x0_scaled))]
 y0 = np.array([f_BO(x0_scaled)])
 
-# s = 'DIRECT'
-# DIRECT_List5d = []
-# for i in range(N_runs): 
-#     FL_DIRECT5d =  DIRECTWrapper().solve(f_DIR, x0_scaled, bounds_surr, \
-#                                     maxfun = N_it, constraints=1)
-#     for j in range(len(FL_DIRECT5d['f_best_so_far'])):
-#         if FL_DIRECT5d['f_best_so_far'][j] > float(y0):
-#             FL_DIRECT5d['f_best_so_far'][j] = float(y0)
-#     DIRECT_List5d += [FL_DIRECT5d]
-#     print(s + ' run ' + str(i+1) + ': Done')
+s = 'DIRECT'
+DIRECT_List5d = []
+for i in range(N_runs): 
+    FL_DIRECT5d =  DIRECTWrapper().solve(f_DIR, x0_scaled, bounds_surr, \
+                                    maxfun = N_it, constraints=1)
+    for j in range(len(FL_DIRECT5d['f_best_so_far'])):
+        if FL_DIRECT5d['f_best_so_far'][j] > float(y0):
+            FL_DIRECT5d['f_best_so_far'][j] = float(y0)
+    DIRECT_List5d += [FL_DIRECT5d]
+    print(s + ' run ' + str(i+1) + ': Done')
 
-# print('DIRECT done')
-# save_data_list += [DIRECT_List5d]
+print('DIRECT done')
+save_data_list += [DIRECT_List5d]
 
-# s = 'BO'
-# BO_List5d = []
-# for i in range(N_runs):
-#     BO5d = BayesianOptimization(f=f_BO, domain=domain, X=x0_scaled.reshape((1,len(x0_scaled))), Y=y0.reshape((1,1)))
-#     BO5d.run_optimization(max_iter=N_it, eps=0)
-#     BO_post5d = preprocess_BO(BO5d.Y.flatten(), y0, N_eval=N_it)
-#     BO_List5d += [BO_post5d]
-#     print(s + ' run ' + str(i+1) + ': Done')
+s = 'BO'
+BO_List5d = []
+for i in range(N_runs):
+    BO5d = BayesianOptimization(f=f_BO, domain=domain, X=x0_scaled.reshape((1,len(x0_scaled))), Y=y0.reshape((1,1)))
+    BO5d.run_optimization(max_iter=N_it, eps=0)
+    BO_post5d = preprocess_BO(BO5d.Y.flatten(), y0, N_eval=N_it)
+    BO_List5d += [BO_post5d]
+    print(s + ' run ' + str(i+1) + ': Done')
 
-# save_data_list += [BO_List5d]
+save_data_list += [BO_List5d]
 
 s_list = ['ADMM', 'ADMM_CUATRO', 'ALADIN_CUATRO', 'Py-BOBYQA', 
           'DIRECT-L', 'GPyOpt']
@@ -313,8 +315,10 @@ ax2.legend()
 
 # dim = len(x0)
 problem = 'Facility_Location_'
-fig1.savefig('../Figures/' + problem + str(N) + 'ag_' + str(dim) + 'dim_conv.svg', format = "svg")
-fig2.savefig('../Figures/' + problem + str(N) + 'ag_' + str(dim) + 'dim_evals.svg', format = "svg")
+# fig1.savefig('../Figures/' + problem + str(N) + 'ag_' + str(dim) + 'dim_conv.svg', format = "svg")
+# fig2.savefig('../Figures/' + problem + str(N) + 'ag_' + str(dim) + 'dim_evals.svg', format = "svg")
+
+raise ValueError
 
 
 # pos_x = np.array([pyo.value(res.x[1])])

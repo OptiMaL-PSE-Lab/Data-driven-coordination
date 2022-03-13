@@ -5,15 +5,16 @@ Created on Fri Jul  2 22:33:43 2021
 @author: dv516
 """
 
-from Problems.ToyProblem1 import f1, f2
+# import DDC
+from src.Problems.ToyProblem1 import f1, f2
 
-from Algorithms.PyBobyqa_wrapped.Wrapper_for_pybobyqa import PyBobyqaWrapper
-from Algorithms.DIRECT_wrapped.Wrapper_for_Direct import DIRECTWrapper
-from Algorithms.ALADIN_Data import System as ALADIN_Data
-from Algorithms.ADMM_Scaled_Consensus import System as ADMM_Scaled
+from src.Algorithms.PyBobyqa_wrapped.Wrapper_for_pybobyqa import PyBobyqaWrapper
+from src.Algorithms.DIRECT_wrapped.Wrapper_for_Direct import DIRECTWrapper
+from src.Algorithms.ALADIN_Data import System as ALADIN_Data
+from src.Algorithms.ADMM_Scaled_Consensus import System as ADMM_Scaled
 # from Algorithms.Coordinator_Augmented import System as Coordinator_ADMM
-from Algorithms.Coordinator_explConstr import System as Coordinator_withConstr
-from Algorithms.CUATRO import CUATRO
+from src.Algorithms.Coordinator_explConstr import System as Coordinator_withConstr
+from src.Algorithms.CUATRO import CUATRO
 from GPyOpt.methods import BayesianOptimization
 
 import numpy as np
@@ -21,7 +22,7 @@ import matplotlib.pyplot as plt
 import pyomo.environ as pyo
 import pickle
 
-from utilities import postprocessing, postprocessing_List, preprocess_BO, postprocess_ADMM
+from src.utilities import postprocessing, postprocessing_List, preprocess_BO, postprocess_ADMM
 
 
 N_it = 50
@@ -202,105 +203,105 @@ fig1.savefig('../Figures/' + problem +'_conv.svg', format = "svg")
 fig2.savefig('../Figures/' + problem +'_evals.svg', format = "svg")
 
 
-def post_2d(ax, string, result, actual_f, s = 10, c = 'k', init=None,
-                    coord_input = False, ALADIN = False, samecoord = False, BO = False):
-    if BO:
-        obj_global = result.get_evaluations()[1].flatten()
-        z_arr = result.get_evaluations()[0].flatten()
-        N_len = min(len(obj_global), len(z_arr))
-        ax.scatter(z_arr[:N_len], obj_global[:N_len], label=string, s=10)
-    elif ALADIN:
-        if samecoord:
-            obj_arr = np.array(result.best_obj)
-            z_arr = np.array(result.center_list)
-            ax.scatter(z_arr, obj_arr, label=string, s=10)
-        else:
-            obj_global = np.sum(np.array([result.obj[i+1] for i in range(N)]), axis = 0)
-            z_arr = np.mean([result.z_list[idx+1][global_ind[0]] for idx in range(N)], axis = 0)
-            ax.scatter(z_arr, obj_global, label=string, s=10)
-    elif not coord_input:
-        obj_arr = np.sum(np.array([result.obj[i+1] for i in range(N)]), axis = 0)
-        z_arr = np.array(result.z_list[global_ind[0]])
-        if not samecoord:
-            ax.scatter(z_arr[1:], obj_arr, label=string, s=10)
-        else:
-            ax.scatter(z_arr, obj_arr, label=string, s=10)  
-    else:
-        f = np.array(result['f_store'])
-        x_list = np.array([result['x_store']]).flatten()
-        N_len = min(len(f), len(x_list))
-        ax.scatter(x_list[:N_len], f[:N_len], label=string, s=10)
+# def post_2d(ax, string, result, actual_f, s = 10, c = 'k', init=None,
+#                     coord_input = False, ALADIN = False, samecoord = False, BO = False):
+#     if BO:
+#         obj_global = result.get_evaluations()[1].flatten()
+#         z_arr = result.get_evaluations()[0].flatten()
+#         N_len = min(len(obj_global), len(z_arr))
+#         ax.scatter(z_arr[:N_len], obj_global[:N_len], label=string, s=10)
+#     elif ALADIN:
+#         if samecoord:
+#             obj_arr = np.array(result.best_obj)
+#             z_arr = np.array(result.center_list)
+#             ax.scatter(z_arr, obj_arr, label=string, s=10)
+#         else:
+#             obj_global = np.sum(np.array([result.obj[i+1] for i in range(N)]), axis = 0)
+#             z_arr = np.mean([result.z_list[idx+1][global_ind[0]] for idx in range(N)], axis = 0)
+#             ax.scatter(z_arr, obj_global, label=string, s=10)
+#     elif not coord_input:
+#         obj_arr = np.sum(np.array([result.obj[i+1] for i in range(N)]), axis = 0)
+#         z_arr = np.array(result.z_list[global_ind[0]])
+#         if not samecoord:
+#             ax.scatter(z_arr[1:], obj_arr, label=string, s=10)
+#         else:
+#             ax.scatter(z_arr, obj_arr, label=string, s=10)  
+#     else:
+#         f = np.array(result['f_store'])
+#         x_list = np.array([result['x_store']]).flatten()
+#         N_len = min(len(f), len(x_list))
+#         ax.scatter(x_list[:N_len], f[:N_len], label=string, s=10)
         
-    return ax
+#     return ax
 
 
-fig = plt.figure() 
-ax = fig.add_subplot() 
+# fig = plt.figure() 
+# ax = fig.add_subplot() 
 
-s = 'ADMM_Scaled'
-out = post_2d(ax,  s, ADMM_Scaled_system, actual_f)
-ax=out
+# s = 'ADMM_Scaled'
+# out = post_2d(ax,  s, ADMM_Scaled_system, actual_f)
+# ax=out
 
-s = 'CUATRO_1'
-out = post_2d(ax, s, output_Coord, actual_f, coord_input = True)
-ax=out
+# s = 'CUATRO_1'
+# out = post_2d(ax, s, output_Coord, actual_f, coord_input = True)
+# ax=out
 
-s = 'CUATRO_2'
-out = post_2d(ax, s, System_dataAL, actual_f, ALADIN = True, init=float(y0))
-ax=out
+# s = 'CUATRO_2'
+# out = post_2d(ax, s, System_dataAL, actual_f, ALADIN = True, init=float(y0))
+# ax=out
 
-ax.scatter(actual_x, actual_f, c = 'black', label = 'Optimum')
-ax.scatter(z[3], float(y0),  s = 25, marker = 'X', c = 'black', label = 'Starting point')
-ax.set_xlabel('Shared variable $x_3$')
-ax.set_ylabel('Function evaluation')
-ax.legend(loc = 'lower right')
-ax.set_yscale('log')
-ax.set_xlim([-2, 6])
-ax.set_ylim([10, 100])
+# ax.scatter(actual_x, actual_f, c = 'black', label = 'Optimum')
+# ax.scatter(z[3], float(y0),  s = 25, marker = 'X', c = 'black', label = 'Starting point')
+# ax.set_xlabel('Shared variable $x_3$')
+# ax.set_ylabel('Function evaluation')
+# ax.legend(loc = 'lower right')
+# ax.set_yscale('log')
+# ax.set_xlim([-2, 6])
+# ax.set_ylim([10, 100])
 
-fig.savefig('../Figures/' + problem +'_1d_1.svg', format = "svg")
-
-
-fig = plt.figure() 
-ax = fig.add_subplot() 
-
-s = 'Py-BOBYQA'
-out = post_2d(ax, s, pybobyqa, actual_f, coord_input = True)
-ax=out
-
-s = 'DIRECT-L'
-out = post_2d(ax, s, DIRECT, actual_f, coord_input = True)
-ax=out
-
-s = 'BO'
-out = post_2d(ax, s, BO, actual_f, BO = True)
-ax=out
-
-ax.scatter(actual_x, actual_f, c = 'black', label = 'Optimum')
-ax.scatter(z[3], float(y0),  s = 25, marker = 'X', c = 'black', label = 'Starting point')
-ax.set_xlabel('Shared variable $x_3$')
-ax.set_ylabel('Function evaluation')
-ax.legend(loc = 'lower right')
-ax.set_yscale('log')
-ax.set_xlim([-2, 6])
-ax.set_ylim([10, 100])
-
-fig.savefig('../Figures/' + problem +'_1d_2.svg', format = "svg")
+# # fig.savefig('../Figures/' + problem +'_1d_1.svg', format = "svg")
 
 
-# # fig = plt.figure() 
-# # ax = fig.add_subplot() 
+# fig = plt.figure() 
+# ax = fig.add_subplot() 
 
-# # z_linspace = np.linspace(-2, 6, 100).reshape((100, 1))
-# # obj = np.array([f_pbqa(x) for x in z_linspace])
+# s = 'Py-BOBYQA'
+# out = post_2d(ax, s, pybobyqa, actual_f, coord_input = True)
+# ax=out
 
-# # ax.plot(z_linspace.flatten(), obj[:,0])
-# # ax.set_xlabel('Shared variable $x_3$')
-# # ax.set_ylabel('Function evaluation')
-# # ax.legend(loc = 'lower right')
-# # ax.set_yscale('log')
-# # ax.set_xlim([-2, 6])
-# # ax.set_ylim([10, 100])
+# s = 'DIRECT-L'
+# out = post_2d(ax, s, DIRECT, actual_f, coord_input = True)
+# ax=out
 
-# # fig.savefig('../Figures/' + problem +'_1d_true.svg', format = "svg")
+# s = 'BO'
+# out = post_2d(ax, s, BO, actual_f, BO = True)
+# ax=out
+
+# ax.scatter(actual_x, actual_f, c = 'black', label = 'Optimum')
+# ax.scatter(z[3], float(y0),  s = 25, marker = 'X', c = 'black', label = 'Starting point')
+# ax.set_xlabel('Shared variable $x_3$')
+# ax.set_ylabel('Function evaluation')
+# ax.legend(loc = 'lower right')
+# ax.set_yscale('log')
+# ax.set_xlim([-2, 6])
+# ax.set_ylim([10, 100])
+
+# # fig.savefig('../Figures/' + problem +'_1d_2.svg', format = "svg")
+
+
+# # # fig = plt.figure() 
+# # # ax = fig.add_subplot() 
+
+# # # z_linspace = np.linspace(-2, 6, 100).reshape((100, 1))
+# # # obj = np.array([f_pbqa(x) for x in z_linspace])
+
+# # # ax.plot(z_linspace.flatten(), obj[:,0])
+# # # ax.set_xlabel('Shared variable $x_3$')
+# # # ax.set_ylabel('Function evaluation')
+# # # ax.legend(loc = 'lower right')
+# # # ax.set_yscale('log')
+# # # ax.set_xlim([-2, 6])
+# # # ax.set_ylim([10, 100])
+
+# # # fig.savefig('../Figures/' + problem +'_1d_true.svg', format = "svg")
 

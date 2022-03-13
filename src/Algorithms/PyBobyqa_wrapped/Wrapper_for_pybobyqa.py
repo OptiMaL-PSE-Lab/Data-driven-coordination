@@ -6,7 +6,7 @@ import numpy as np
 #from algorithms.Bayesian_opt_Pyro.utilities_full import BayesOpt
 #from test_functions import rosenbrock_constrained, quadratic_constrained
 
-from Algorithms.general_utility_functions import PenaltyFunctions
+from src.Algorithms.general_utility_functions import PenaltyFunctions
 
 
 
